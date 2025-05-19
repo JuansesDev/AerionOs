@@ -35,6 +35,12 @@ AuraOS es una simulación interactiva de un sistema operativo de escritorio que 
     *   *Abrir `index.html` directamente desde el sistema de archivos (`file:///`) no funcionará debido a los módulos ES6.*
 3.  Abre la URL de tu servidor local (ej. `http://localhost:8080`) en un navegador moderno.
 
+## Demo en línea
+
+Puedes probar la demo desde el siguiente enlace:
+
+[https://juansesdev.github.io/AuraOs/](https://juansesdev.github.io/AuraOs/)
+
 ## Autor
 
 *   **JuansesDev**
