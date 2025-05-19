@@ -1,22 +1,83 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es"> <!-- Idioma principal de la página -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraOS - Portfolio Edition v2</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles/clock-calendar-widget.css">
-    <link rel="stylesheet" href="styles/taskbar-fix.css">
-    <link rel="stylesheet" href="style.css">
-    <!-- Favicon SVG -->
+
+    <!-- ESPAÑOL (Principal) -->
+    <title>AuraOS: Simulación de SO Web Interactivo | Portfolio JuansesDev</title>
+    <meta name="description" content="Explora AuraOS, una simulación de sistema operativo web interactiva creada por JuansesDev. Descubre aplicaciones, un sistema de archivos y juegos, todo en tu navegador. Proyecto de portafolio con HTML, CSS y JavaScript modular.">
+
+    <!-- INGLÉS (Alternativo/Referencia - Google podría no usarlo directamente para esta URL si lang="es") -->
+    <!--
+    <link rel="alternate" hreflang="en" href="https://juansesdev.github.io/AuraOs/"> Ajusta si tienes una URL específica para inglés
+    <meta property="og:locale:alternate" content="en_US">
+    Título en Inglés: <title>AuraOS: Interactive Web OS Simulation | JuansesDev Portfolio</title>
+    Descripción en Inglés: <meta name="description" content="Explore AuraOS, an interactive web operating system simulation by JuansesDev. Discover apps, a file system, and games, all in your browser. Portfolio project showcasing HTML, CSS, and modular JavaScript.">
+    -->
+
+    <meta name="keywords" content="AuraOS, JuansesDev, sistema operativo web, simulación SO, web desktop, OS simulation, portfolio, JavaScript, HTML, CSS, frontend, desarrollo web, proyecto personal, interactive OS, aplicaciones web, web apps">
+    <meta name="author" content="JuansesDev (Sebastián Vargas)">
+    <link rel="canonical" href="https://juansesdev.github.io/AuraOs/">
+
+    <!-- Open Graph (Principalmente en el idioma de la etiqueta `og:locale`) -->
+    <meta property="og:title" content="AuraOS: Simulación de SO Web Interactivo por JuansesDev">
+    <meta property="og:description" content="Descubre AuraOS, un sistema operativo web simulado con múltiples aplicaciones. Un proyecto de portafolio para demostrar habilidades en desarrollo front-end.">
+    <meta property="og:image" content="https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747688882/default_background_kocr6r.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="AuraOS - Sistema operativo web simulado">
+    <meta property="og:url" content="https://juansesdev.github.io/AuraOs/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="es_LA"> <!-- Español - Latinoamérica. Cambia a es_ES si es más apropiado -->
+    <!-- Si tuvieras una versión en inglés claramente separada y con su propia URL, añadirías: -->
+    <!-- <meta property="og:locale:alternate" content="en_US"> -->
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AuraOS: Simulación de SO Web por JuansesDev">
+    <meta name="twitter:description" content="Explora AuraOS, un sistema operativo web simulado con múltiples aplicaciones interactivas. Creado por JuansesDev.">
+    <meta name="twitter:image" content="https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747688882/default_background_kocr6r.png"> <!-- TU IMAGEN -->
+    <meta name="twitter:image:alt" content="AuraOS - Sistema operativo web simulado">
+    <meta name="twitter:domain" content="juansesdev.github.io">
+    <!-- <meta name="twitter:site" content="@JuansesDev_"> Si tienes un Twitter para el proyecto o personal -->
+    <meta name="twitter:creator" content="@JuansesDev_"> <!-- Tu Twitter personal si aplica -->
+
+    <!-- Favicons -->
     <link rel="icon" type="image/svg+xml" href="public/auraOs.svg">
-    <!-- Favicon alternativo para navegadores antiguos -->
-    <link rel="alternate icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="public/auraOs-192.png"> <!-- Crear este archivo -->
+    <link rel="apple-touch-icon" sizes="180x180" href="public/auraOs-180.png"> <!-- Crear este archivo -->
+    <link rel="manifest" href="manifest.json"> <!-- Crear manifest.json para PWA -->
+
+    <!-- Theming -->
+    <meta name="theme-color" content="#282c34"> <!-- Color principal de tu UI -->
+
+    <!-- Hojas de Estilo -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/taskbar-fix.css">
+    <link rel="stylesheet" href="styles/clock-calendar-widget.css">
 </head>
 <body>
     <div id="aura-os-container">
-        <!-- Contenido dinámico (login o escritorio) -->
+        <noscript>
+            <div style="text-align: center; padding: 20px; font-family: Arial, sans-serif; color: #333; background-color: #f4f4f4;">
+                <h1>Bienvenido a AuraOS</h1>
+                <p>AuraOS es una simulación interactiva de un sistema operativo web. **Requiere JavaScript para funcionar correctamente.**</p>
+                <p>Por favor, habilita JavaScript en tu navegador para experimentar todas las características de AuraOS, incluyendo su explorador de archivos, editor de código, terminal y juegos.</p>
+                <p>Este es un proyecto de portafolio desarrollado por JuansesDev.</p>
+                <hr style="margin: 20px auto; width: 50%;">
+                <h1>Welcome to AuraOS</h1>
+                <p>AuraOS is an interactive web-based operating system simulation. **JavaScript is required for it to function correctly.**</p>
+                <p>Please enable JavaScript in your browser to experience all AuraOS features, including its file explorer, code editor, terminal, and games.</p>
+                <p>This is a portfolio project developed by JuansesDev.</p>
+            </div>
+        </noscript>
+        <!-- El contenido dinámico se insertará aquí -->
     </div>
 
     <template id="window-template">
@@ -25,9 +86,9 @@
                 <span class="window-icon"><i class="fas fa-question-circle"></i></span>
                 <span class="window-title">Ventana</span>
                 <div class="window-controls">
-                    <button class="window-control-button minimize-button" aria-label="Minimizar"><i class="fas fa-window-minimize"></i></button>
-                    <button class="window-control-button maximize-button" aria-label="Maximizar"><i class="far fa-square"></i></button>
-                    <button class="window-control-button close-button" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+                    <button class="window-control-button minimize-button" aria-label="Minimizar" title="Minimizar"><i class="fas fa-window-minimize"></i></button>
+                    <button class="window-control-button maximize-button" aria-label="Maximizar" title="Maximizar"><i class="far fa-square"></i></button>
+                    <button class="window-control-button close-button" aria-label="Cerrar" title="Cerrar"><i class="fas fa-times"></i></button>
                 </div>
             </div>
             <div class="window-content">
@@ -37,6 +98,6 @@
     </template>
 
     <script src="js/main.js" type="module"></script>
-    <script src="js/service-worker-control.js"></script>
+    <script src="js/service-worker-control.js" defer></script>
 </body>
 </html>
