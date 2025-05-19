@@ -1,0 +1,1605 @@
+/* -------------------- */
+/* --- Variables CSS -- */
+/* -------------------- */
+:root {
+    --primary-bg: #282c34;          /* Fondo principal oscuro (Atom/VSCode dark) */
+    --secondary-bg: #21252b;        /* Fondo secundario un poco más oscuro */
+    --tertiary-bg: #323842;         /* Para elementos como cabeceras de ventana */
+    --light-bg: #393f4a;            /* Elementos más claros sobre fondos oscuros (botones) */
+    --accent-color: #61afef;        /* Azul suave (Atom/VSCode) */
+    --accent-color-hover: #529bdf;  /* Azul un poco más brillante para hover */
+    --text-color: #abb2bf;          /* Texto principal (gris claro) */
+    --text-color-darker: #7f848e;   /* Texto más oscuro/tenue */
+    --text-on-accent: #ffffff;      /* Texto sobre el color de acento */
+    --border-color: #181a1f;        /* Borde muy oscuro, casi negro */
+    --border-color-light: #4b5263;  /* Borde más visible */
+    --shadow-color: rgba(0, 0, 0, 0.35);
+    --success-color: #5cb85c;       /* Verde */
+    --error-color: #d9534f;         /* Rojo */
+    --warning-color: #f0ad4e;       /* Naranja */
+    --font-family: 'Lato', 'Roboto', sans-serif;
+    --taskbar-height: 45px;         /* Altura de la barra de tareas */
+    --window-border-radius: 6px;
+    --control-border-radius: 4px;
+}
+
+/* -------------------- */
+/* --- Reset Básico --- */
+/* -------------------- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font-family);
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    font-size: 14px; /* Tamaño base de fuente */
+    line-height: 1.5;
+    user-select: none; /* Prevenir selección de texto al arrastrar */
+}
+
+button, input, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+
+input:focus, button:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--accent-color-hover);
+    outline-offset: 1px;
+}
+button {
+    cursor: pointer;
+}
+ul {
+    list-style: none;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--light-bg);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #555c6d;
+}
+
+
+/* -------------------- */
+/* --- Contenedor OS -- */
+/* -------------------- */
+#aura-os-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* -------------------- */
+/* -- Pantalla Auth --- */
+/* -------------------- */
+.auth-screen {
+    background-color: var(--secondary-bg);
+    padding: 35px 45px;
+    border-radius: 8px;
+    box-shadow: 0 12px 35px var(--shadow-color);
+    width: 380px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+.auth-screen h2 {
+    color: var(--accent-color);
+    margin-bottom: 30px;
+    font-weight: 400;
+    font-size: 1.8em;
+}
+.auth-screen .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+.auth-screen label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.95em;
+    color: var(--text-color);
+    font-weight: 300;
+}
+.auth-screen input[type="text"] {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--control-border-radius);
+    color: var(--text-color);
+    font-size: 1em;
+    transition: border-color 0.2s ease;
+}
+.auth-screen input[type="text"]:focus {
+    border-color: var(--accent-color);
+}
+.auth-screen button#auth-button {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+    border: none;
+    padding: 12px 20px;
+    border-radius: var(--control-border-radius);
+    font-size: 1.05em;
+    width: 100%;
+    transition: background-color 0.2s;
+    font-weight: 500;
+}
+.auth-screen button#auth-button:hover {
+    background-color: var(--accent-color-hover);
+}
+.auth-screen .auth-switch {
+    margin-top: 25px;
+    font-size: 0.9em;
+    color: var(--text-color-darker);
+}
+.auth-screen .auth-switch span {
+    color: var(--accent-color);
+    cursor: pointer;
+    text-decoration: none;
+}
+.auth-screen .auth-switch span:hover {
+    text-decoration: underline;
+}
+.auth-error {
+    color: var(--error-color);
+    font-size: 0.9em;
+    margin-top: 12px;
+    min-height: 1.3em;
+    text-align: center;
+}
+
+/* -------------------- */
+/* --- Escritorio ----- */
+/* -------------------- */
+#desktop {
+    width: 100%;
+    height: 100%; /* Ocupa el espacio del contenedor después del login */
+    position: absolute; /* Para que la barra de tareas se posicione relativa a este */
+    top:0; left: 0;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column; /* Iconos en columnas */
+    flex-wrap: wrap;    /* Permitir que los iconos pasen a la siguiente "columna" */
+    align-content: flex-start; /* Alinear columnas a la izquierda */
+    gap: 10px 15px; /* Espacio vertical y horizontal entre iconos */
+    padding: 20px;
+    overflow: hidden; /* Para que las ventanas no creen scroll en el escritorio */
+}
+
+.desktop-icon {
+    width: 90px; /* Ancho fijo para cada icono */
+    padding: 8px;
+    text-align: center;
+    color: #ffffff; /* Texto blanco para contraste */
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+    border-radius: var(--control-border-radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.desktop-icon i {
+    font-size: 32px; /* Tamaño de iconos */
+    margin-bottom: 6px;
+    display: block;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+.desktop-icon span {
+    font-size: 12px;
+    display: block;
+    word-wrap: break-word; /* Para nombres largos */
+    line-height: 1.3;
+    max-height: 2.6em; /* Limitar a dos líneas aprox. */
+    overflow: hidden;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+.desktop-icon:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.desktop-icon:active {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* -------------------- */
+/* --- Barra Tareas --- */
+/* -------------------- */
+#taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--taskbar-height);
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    box-shadow: 0 -3px 12px var(--shadow-color);
+    z-index: 2000;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Estilo para el icono del botón de inicio */
+.start-button-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+
+#start-button-area {
+    padding: 0 5px;
+}
+#start-button {
+    background-color: transparent;
+    color: var(--text-color);
+    border: none;
+    padding: 6px 10px;
+    font-size: 22px; /* Icono de inicio más grande */
+    cursor: pointer;
+    border-radius: var(--control-border-radius);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#start-button:hover, #start-button.active {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
+
+#taskbar-apps {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    margin-left: 8px;
+    overflow-x: auto; /* Para cuando hay muchas apps */
+    flex-grow: 1; /* Que ocupe el espacio disponible */
+    padding: 2px 0; /* Pequeño padding para los iconos */
+}
+/* Scrollbar para taskbar-apps si es necesario */
+#taskbar-apps::-webkit-scrollbar { height: 4px; }
+#taskbar-apps::-webkit-scrollbar-thumb { background: var(--secondary-bg); }
+
+
+.taskbar-app-icon {
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    padding: 5px 10px;
+    margin: 0 3px;
+    border-radius: var(--control-border-radius);
+    cursor: pointer;
+    font-size: 13px;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, border-bottom-color 0.15s ease;
+    border-bottom: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: calc(100% - 6px); /* Ajustar altura para que border-bottom se vea bien */
+}
+
+/* Estilo específico para apps ancladas */
+.taskbar-app-icon.pinned:not(.active):not(.minimized) {
+    background-color: var(--tertiary-bg);
+    opacity: 0.85;
+    border-bottom-color: var(--accent-color);
+}
+
+.taskbar-app-icon:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.taskbar-app-icon:active {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+#taskbar-system-tray {
+    margin-left: auto; /* Empujar a la derecha */
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-right: 5px;
+}
+#clock-trigger { /* Anteriormente #clock, actualizado para el nuevo ID y con mejoras */
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-color-darker);
+    cursor: pointer;
+    border-radius: var(--control-border-radius);
+    transition: background-color 0.15s ease, color 0.15s ease;
+    line-height: var(--taskbar-height); /* Para centrar verticalmente si es necesario */
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+#clock-trigger:hover {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+}
+
+/* -------------------- */
+/* --- Menú Inicio ---- */
+/* -------------------- */
+#start-menu {
+    position: fixed;
+    bottom: var(--taskbar-height);
+    left: 0;
+    width: 450px;
+    max-height: calc(80vh - var(--taskbar-height));
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    box-shadow: 0 -5px 25px var(--shadow-color);
+    z-index: 1999;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--window-border-radius) var(--window-border-radius) 0 0;
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    overflow: hidden;
+    color: var(--text-color);
+    font-family: var(--font-family);
+}
+
+#start-menu.hidden {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+    pointer-events: none;
+}
+
+#start-menu:not(.hidden) {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.start-menu-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Columna izquierda con categorías */
+.start-menu-categories {
+    width: 220px;
+    background-color: var(--tertiary-bg);
+    overflow-y: auto;
+    padding: 10px 0;
+    border-right: 1px solid var(--border-color);
+}
+
+.category-item {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    color: var(--text-color-darker);
+    font-size: 0.95em;
+}
+
+.category-item:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-color);
+}
+
+.category-item.active {
+    color: var(--text-on-accent);
+    background-color: var(--accent-color);
+}
+
+.category-item.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background-color: var(--accent-color-hover);
+}
+
+.category-item i {
+    width: 22px;
+    text-align: center;
+    font-size: 1.2em;
+}
+
+/* Columna derecha con aplicaciones */
+.start-menu-apps {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background-color: var(--secondary-bg);
+}
+
+.app-item {
+    padding: 10px 14px;
+    border-radius: var(--control-border-radius);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    margin-bottom: 3px;
+}
+
+.app-item:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.app-item i {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    color: var(--accent-color);
+}
+
+.app-item .app-name {
+    font-size: 0.95em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.no-apps {
+    padding: 30px 15px;
+    text-align: center;
+    color: var(--text-color-darker);
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+/* Footer del menú */
+.start-menu-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    background-color: var(--tertiary-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Búsqueda */
+.search-container {
+    display: flex;
+    align-items: center;
+    background-color: var(--primary-bg);
+    border-radius: 20px;
+    padding: 0 12px;
+    flex: 1;
+    margin-right: 15px;
+    border: 1px solid var(--border-color-light);
+    transition: border-color 0.2s;
+}
+
+.search-container:focus-within {
+    border-color: var(--accent-color);
+}
+
+.search-icon {
+    color: var(--text-color-darker);
+    margin-right: 8px;
+}
+
+.search-input {
+    border: none;
+    background: transparent;
+    padding: 7px 0;
+    width: 100%;
+    color: var(--text-color);
+    font-size: 0.9em;
+}
+
+.search-input::placeholder {
+    color: var(--text-color-darker);
+}
+
+.search-input:focus {
+    outline: none;
+}
+
+/* Botones de acciones */
+.menu-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.menu-actions button {
+    background: none;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color-darker);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.menu-actions button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+.power-button:hover {
+    background-color: rgba(231, 76, 60, 0.15)!important;
+    color: #e74c3c!important;
+}
+
+/* Responsive */
+@media (max-width: 650px) {
+    #start-menu {
+        width: 80%; /* Cambiado de width: 450px para mejor responsividad */
+        max-width: 450px; /* Mantenemos un max-width */
+    }
+
+    .start-menu-content {
+        flex-direction: column;
+    }
+
+    .start-menu-categories {
+        width: 100%;
+        max-height: 40%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+}
+
+/* -------------------- */
+/* --- Ventanas ------- */
+/* -------------------- */
+.window {
+    position: absolute;
+    /* width, height, top, left se definen en JS */
+    background-color: var(--secondary-bg); /* Fondo opaco, era transparente */
+    border: 1px solid var(--border-color); /* Borde más oscuro */
+    box-shadow: 0 8px 25px var(--shadow-color);
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--window-border-radius);
+    overflow: hidden;
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    min-width: 250px; /* Establecido en JS, pero bueno tenerlo en CSS */
+    min-height: 150px;
+}
+.window.minimized-state {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+    pointer-events: none;
+}
+.window.maximized-state {
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: calc(100% - var(--taskbar-height)) !important; /* Ajustado a desktop */
+    border-radius: 0;
+    box-shadow: none;
+    border: none; /* Sin borde cuando está maximizada */
+}
+
+.window-header {
+    background-color: var(--tertiary-bg);
+    color: var(--text-color);
+    padding: 6px 10px; /* Un poco más compacto */
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    height: 36px; /* Altura fija para la cabecera */
+}
+.window-icon {
+    margin-right: 8px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+.window-title {
+    font-weight: 400; /* Más ligero */
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.95em;
+    margin-left: 2px; /* Pequeño espacio si no hay icono */
+}
+
+.window-controls {
+    display: flex;
+}
+.window-control-button {
+    background: none;
+    border: none;
+    color: var(--text-color-darker);
+    font-size: 13px; /* Iconos de control más pequeños */
+    padding: 6px 9px;
+    cursor: pointer;
+    border-radius: var(--control-border-radius);
+    margin-left: 3px;
+    line-height: 1; /* Para alinear bien los iconos FA */
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+.window-control-button:hover {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+}
+.window-control-button.close-button:hover {
+    background-color: var(--error-color);
+    color: var(--text-on-accent);
+}
+
+.window-content {
+    flex-grow: 1; /* Ocupa el espacio restante */
+    background-color: var(--secondary-bg); /* Fondo sólido para el contenido también */
+    color: var(--text-color); /* Texto claro sobre fondo oscuro de ventana */
+    overflow: auto; /* Scroll si el contenido es muy largo */
+    position: relative; /* Para posicionar elementos internos si es necesario */
+}
+/* Apps específicas podrían necesitar padding:0 en window-content */
+.calculator-app .window-content,
+.files-app .window-content,
+.notepad-app .window-content,
+.browser-app .window-content {
+    padding: 0; /* Las apps manejan su propio padding interno */
+}
+
+
+/* -------------------- */
+/* --- Calculadora ---- */
+/* -------------------- */
+/* La clase .calculator-app se añade a la .window */
+.calculator-app .window-content {
+    display: flex; /* Para que la calculadora ocupe todo el espacio */
+    padding: 0; /* Sin padding para que la calculadora ocupe todo el espacio */
+    background-color: var(--secondary-bg); /* Asegurar fondo opaco */
+}
+
+.calculator {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: auto repeat(5, 1fr); /* 1 fila para display, 5 para botones */
+    gap: 1px; /* Reducir espacio entre botones */
+    width: 100%;
+    height: 100%;
+    background-color: var(--primary-bg); /* Fondo para toda la calculadora */
+}
+
+.calculator-display {
+    grid-column: 1 / -1;
+    background-color: var(--primary-bg); /* Fondo para el display */
+    color: var(--text-color); /* Color de texto más claro */
+    padding: 15px;
+    text-align: right;
+    font-size: 2em;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.calculator button {
+    font-size: 1.2em;
+    border: none;
+    background-color: var(--tertiary-bg); /* Fondo para todos los botones */
+    color: var(--text-color);
+    transition: background-color 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0; /* Sin márgenes para cuadrícula perfecta */
+    border-radius: 0; /* Sin bordes redondeados para diseño cuadriculado */
+    padding: 0; /* Sin padding para que los botones se alineen perfectamente */
+    height: 100%; /* Asegurar que ocupen todo el alto disponible */
+}
+
+.calculator button:hover {
+    background-color: var(--light-bg);
+}
+
+.calculator button.operator {
+    background-color: var(--accent-color); /* Color de acento para operadores */
+    color: var(--text-on-accent);
+}
+
+.calculator button.operator:hover {
+    background-color: var(--accent-color-hover);
+}
+
+.calculator button.equals {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
+
+.calculator button.clear {
+    background-color: var(--error-color);
+    color: var(--text-on-accent);
+}
+
+.calculator button.zero {
+    grid-column: span 2; /* El cero ocupa dos columnas */
+}
+
+/* ------------------------- */
+/* --- Explorador Archivos - */
+/* ------------------------- */
+.files-app .window-content { /* Ya está en padding: 0; */
+    display: flex;
+    flex-direction: column;
+}
+.file-explorer-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    background-color: var(--tertiary-bg);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* No se encoja */
+}
+.file-explorer-toolbar button {
+    background: none;
+    border: none;
+    color: var(--text-color-darker);
+    padding: 5px 7px;
+    margin-right: 4px;
+    cursor: pointer;
+    border-radius: var(--control-border-radius);
+    font-size: 0.95em;
+}
+.file-explorer-toolbar button:hover:not(:disabled) {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+}
+.file-explorer-toolbar button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.file-explorer-path-bar {
+    flex-grow: 1;
+    padding: 6px 10px;
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--control-border-radius);
+    color: var(--text-color);
+    margin: 0 8px;
+    font-size: 0.9em;
+}
+.file-explorer-container {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+}
+.file-explorer-sidebar {
+    width: 180px;
+    min-width: 150px; /* Evitar que se encoja demasiado */
+    background-color: var(--secondary-bg);
+    padding: 8px;
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+/* .file-explorer-sidebar ul already inherits list-style: none from global ul rule */
+.file-explorer-sidebar li {
+    padding: 7px 10px;
+    cursor: pointer;
+    border-radius: var(--control-border-radius);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+    color: var(--text-color-darker);
+    font-size: 0.9em;
+    transition: background-color 0.1s, color 0.1s;
+}
+.file-explorer-sidebar li:hover, .file-explorer-sidebar li.active {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
+.file-explorer-sidebar li i { width: 16px; text-align: center; }
+
+.file-explorer-main-area {
+    flex-grow: 1;
+    padding: 10px;
+    overflow-y: auto;
+}
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 7px 10px;
+    border-radius: var(--control-border-radius);
+    cursor: pointer;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+    transition: background-color 0.1s, border-color 0.1s;
+}
+.file-item:hover {
+    background-color: var(--light-bg);
+    border-color: var(--border-color-light);
+}
+.file-item i {
+    margin-right: 10px;
+    color: var(--accent-color);
+    width: 18px;
+    text-align: center;
+    font-size: 1.1em;
+}
+.file-item .file-name { flex-grow: 1; color: var(--text-color); font-size: 0.95em;}
+.file-item .file-type, .file-item .file-size {
+    font-size: 0.85em;
+    color: var(--text-color-darker);
+    margin-left: 12px;
+    min-width: 70px; /* Para alinear un poco */
+    text-align: right;
+    white-space: nowrap;
+}
+.file-explorer-main-area > p { /* Mensaje de carpeta vacía */
+    text-align:center; margin-top:30px; color: var(--text-color-darker);
+}
+
+/* -------------------- */
+/* -- Menu Contextual - */
+/* -------------------- */
+.context-menu {
+    position: absolute;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--control-border-radius);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+    padding: 5px 0;
+    z-index: 3000;
+    min-width: 180px;
+    font-size: 0.9em;
+}
+/* .context-menu ul already inherits list-style: none from global ul rule */
+.context-menu li {
+    padding: 8px 15px;
+    cursor: pointer;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.context-menu li:hover:not(.disabled) {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
+.context-menu li.disabled {
+    color: var(--text-color-darker);
+    cursor: not-allowed;
+}
+.context-menu li i { width: 16px; text-align: center; }
+.context-menu-separator {
+    height: 1px;
+    background-color: var(--border-color-light);
+    margin: 4px 0;
+    padding: 0 !important; /* Sobrescribir padding de li */
+}
+
+
+/* -------------------- */
+/* --- Bloc de Notas -- */
+/* -------------------- */
+.notepad-app .window-content { /* Ya es padding: 0 */
+    display: flex;
+    flex-direction: column;
+}
+.notepad-toolbar {
+    display: flex;
+    padding: 6px 8px;
+    background-color: var(--tertiary-bg);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    align-items: center;
+}
+.notepad-toolbar button {
+    margin-right: 5px;
+    padding: 5px 10px;
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color-light);
+    color: var(--text-color);
+    border-radius: var(--control-border-radius);
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.notepad-toolbar button:hover {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+    border-color: var(--accent-color);
+}
+.notepad-toolbar input.notepad-filename {
+    flex-grow: 1;
+    padding: 5px 8px;
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--control-border-radius);
+    color: var(--text-color);
+    font-size: 0.9em;
+    margin-left: auto; /* Empujar a la derecha */
+    max-width: 200px;
+}
+.notepad-toolbar input.notepad-filename:disabled {
+    background-color: var(--secondary-bg);
+    opacity: 0.7;
+}
+
+.notepad-textarea {
+    flex-grow: 1;
+    width: 100%;
+    border: none;
+    padding: 12px; /* Buen padding para escribir */
+    font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: none;
+    background-color: var(--window-bg);
+    color: var(--text-color);
+}
+.notepad-textarea:focus { outline: none; }
+
+
+/* -------------------- */
+/* --- Navegador Web -- */
+/* -------------------- */
+.browser-app .window-content { /* Ya es padding: 0 */
+    display: flex;
+    flex-direction: column;
+}
+.browser-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 7px 10px;
+    background-color: var(--tertiary-bg);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.browser-toolbar button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: var(--text-color-darker);
+    padding: 5px 8px;
+    margin-right: 5px;
+    border-radius: var(--control-border-radius);
+}
+.browser-toolbar button:hover:not(:disabled) {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+}
+.browser-toolbar button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.browser-address-bar {
+    flex-grow: 1;
+    padding: 7px 12px;
+    border: 1px solid var(--border-color-light);
+    border-radius: 20px; /* Barra de direcciones redondeada */
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    margin: 0 8px;
+    font-size: 0.9em;
+}
+.browser-iframe-container {
+    flex-grow: 1;
+    background-color: #ffffff; /* Fondo blanco para iframes por defecto */
+    overflow: hidden;
+    position: relative; /* Para el mensaje de error */
+}
+.browser-iframe-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+.browser-iframe-container .iframe-message {
+    position: absolute;
+    top:0; left:0; width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #555; /* Texto oscuro sobre fondo blanco de iframe */
+    padding: 20px;
+    background-color: #f0f0f0; /* Fondo para el mensaje de error */
+    font-size: 1.1em;
+}
+.browser-iframe-container .iframe-message i {
+    font-size: 3em;
+    margin-bottom: 15px;
+    color: #aaa;
+}
+.browser-iframe-container .iframe-message .try-alternative {
+    margin-top: 15px;
+    padding: 8px 15px;
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+    border-radius: var(--control-border-radius);
+    text-decoration: none;
+    cursor: pointer;
+    display: inline-block;
+}
+.browser-iframe-container .iframe-message .try-alternative:hover {
+    background-color: var(--accent-color-hover);
+}
+
+/* ------------------------------------- */
+/* --- Ajustes App - General & Cuenta -- */
+/* ------------------------------------- */
+.settings-app .window-content {
+    padding: 20px;
+    overflow-y: auto; /* Permitir scroll si el contenido es muy alto */
+}
+.settings-category {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color-light);
+}
+.settings-category:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.settings-category h3 {
+    margin-top: 0;
+    margin-bottom: 18px; /* Un poco más de espacio debajo del título de categoría */
+    color: var(--accent-color);
+    font-weight: 500;
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.setting-item {
+    margin-bottom: 15px; /* Un poco más de espacio entre items */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.setting-item label {
+    display: inline-block;
+    width: 190px; /* Un poco más de ancho para etiquetas largas */
+    color: var(--text-color-darker);
+    font-size: 0.95em;
+    flex-shrink: 0;
+}
+.setting-item input[type="text"],
+.setting-item select {
+    padding: 8px 10px;
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--control-border-radius);
+    color: var(--text-color);
+    flex-grow: 1;
+    min-width: 150px;
+}
+.setting-item input[type="text"]:focus,
+.setting-item select:focus {
+    border-color: var(--accent-color); /* Resaltar borde al enfocar */
+}
+
+.setting-item span:not(label) {
+    color: var(--text-color);
+    font-weight: 500;
+}
+.setting-item button {
+    padding: 8px 15px; /* Botones un poco más grandes */
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: var(--control-border-radius);
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+    line-height: 1.2; /* Para mejor alineación vertical del texto */
+}
+.setting-item button:hover {
+    background-color: var(--accent-color-hover);
+}
+.setting-item button[data-action="reset-wallpaper"] {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+}
+.setting-item button[data-action="reset-wallpaper"]:hover {
+    background-color: #4a5260;
+}
+
+/* Estilos generales para párrafos dentro de settings-app, como en "Acerca de" */
+.settings-app .window-content p {
+    font-size: 0.95em;
+    margin-bottom: 8px;
+    color: var(--text-color-darker);
+    line-height: 1.6;
+}
+.settings-app .window-content p strong {
+    color: var(--text-color);
+    font-weight: 500;
+}
+.settings-app .window-content ul {
+    list-style-type: disc;
+    margin-left: 20px;
+    margin-bottom: 15px;
+    padding-left: 5px; /* Pequeño padding para los bullets */
+}
+.settings-app .window-content ul li {
+    margin-bottom: 5px;
+}
+.settings-app .window-content a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+.settings-app .window-content a:hover {
+    text-decoration: underline;
+}
+
+
+/* ------------------------------------------ */
+/* --- Ajustes App - Galería de Fondos      --- */
+/* ------------------------------------------ */
+.settings-app .wallpaper-gallery-container {
+    display: flex; /* Permite que la label y la galería se organicen */
+    flex-direction: column;
+    align-items: flex-start;
+}
+.settings-app .wallpaper-gallery-container > label { /* Label "Galería de Fondos:" */
+    margin-bottom: 10px !important; /* Forzar margen para la label de la galería */
+    width: 100%;
+    display: block;
+    font-weight: 500;
+}
+
+.wallpaper-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 5px;
+    max-height: 150px; /* Reducido para que no ocupe tanto si hay pocos */
+    overflow-y: auto;
+    width: 100%;
+    background-color: var(--primary-bg);
+    padding: 10px;
+    border-radius: var(--control-border-radius);
+    border: 1px solid var(--border-color-light);
+}
+
+.wallpaper-item {
+    width: 100px;
+    height: 60px;
+    border: 2px solid transparent;
+    border-radius: var(--control-border-radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    background-color: var(--secondary-bg);
+}
+.wallpaper-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.wallpaper-item:hover {
+    border-color: var(--accent-color-hover);
+    transform: scale(1.05);
+}
+.wallpaper-item.selected {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px var(--accent-color), 0 0 8px var(--accent-color);
+    transform: scale(1.02);
+}
+.wallpaper-item.selected::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 5 Free', 'Font Awesome 6 Free', 'FontAwesome'; /* Más opciones de familia FA */
+    font-weight: 900;
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    color: white;
+    background-color: var(--accent-color);
+    padding: 2px 3px;
+    border-radius: 50%;
+    font-size: 8px;
+    line-height: 1;
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
+    z-index: 1; /* Asegurar que esté encima de la imagen */
+}
+
+/* -------------------- */
+/* --- Buscaminas App - */
+/* -------------------- */
+.minesweeper-app .window-content {
+    padding: 0; /* App maneja su propio padding */
+    display: flex; /* Para centrar el juego si es más pequeño que la ventana */
+    align-items: center;
+    justify-content: center;
+    background-color: var(--secondary-bg); /* Fondo para el área del juego */
+}
+
+.minesweeper-game {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 8px 12px;
+    background-color: var(--tertiary-bg);
+    border-radius: var(--control-border-radius);
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+.game-info .new-game-button {
+    padding: 6px 12px;
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: var(--control-border-radius);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.game-info .new-game-button:hover {
+    background-color: var(--accent-color-hover);
+}
+.game-info .new-game-button i {
+    font-size: 0.9em;
+}
+.game-info .info-panel {
+    display: flex;
+    gap: 15px;
+}
+.info-panel span {
+    color: var(--text-color-darker);
+}
+.info-panel .mines-left, .info-panel .timer {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+
+.game-board {
+    display: grid;
+    border: 2px solid var(--border-color); /* Borde del tablero */
+    background-color: var(--primary-bg); /* Fondo del tablero */
+    /* grid-template-columns se establece en JS */
+}
+
+.cell {
+    width: 30px; /* Tamaño de celda */
+    height: 30px;
+    background-color: var(--light-bg);
+    border: 1px solid var(--secondary-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.1s;
+    color: var(--text-color);
+}
+.cell:hover:not(.revealed) {
+    background-color: #4a5260;
+}
+.cell.revealed {
+    background-color: var(--secondary-bg);
+    cursor: default;
+    border-color: var(--tertiary-bg);
+}
+.cell.mine {
+    background-color: var(--error-color);
+    color: white;
+}
+.cell.flagged i {
+    color: var(--warning-color); /* Naranja para banderas */
+}
+
+.cell.count-1 { color: #4299e1; } /* Azul */
+.cell.count-2 { color: #48bb78; } /* Verde */
+.cell.count-3 { color: #ed8936; } /* Naranja */
+.cell.count-4 { color: #3182ce; } /* Azul oscuro */
+.cell.count-5 { color: #c53030; } /* Rojo oscuro */
+.cell.count-6 { color: #38b2ac; } /* Teal */
+.cell.count-7 { color: #000000; } /* Negro */
+.cell.count-8 { color: #718096; } /* Gris */
+
+.game-status {
+    margin-top: 10px;
+    padding: 8px 15px;
+    background-color: var(--tertiary-bg);
+    border-radius: var(--control-border-radius);
+    font-weight: 500;
+    min-width: 200px;
+    text-align: center;
+}
+.game-status.win {
+    background-color: var(--success-color);
+    color: var(--text-on-accent);
+}
+.game-status.lose {
+    background-color: var(--error-color);
+    color: var(--text-on-accent);
+}
+/* -------------------- */
+/* ----- Ajedrez App -- */
+/* -------------------- */
+.chess-app .window-content {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--secondary-bg);
+}
+
+.chess-game {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+}
+
+.chess-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    background-color: var(--tertiary-bg);
+    border-radius: var(--control-border-radius);
+}
+
+.chess-status {
+    font-weight: bold;
+    padding: 5px;
+}
+
+.chess-status.check-status {
+    color: var(--error-color);
+}
+
+.chess-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    aspect-ratio: 1/1;
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+    border: 3px solid var(--text-color);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.chess-square {
+    aspect-ratio: 1/1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+}
+
+.light-square {
+    background-color: #f0d9b5;
+}
+
+.dark-square {
+    background-color: #b58863;
+}
+
+.chess-piece {
+    font-size: 2rem;
+    z-index: 2;
+}
+
+.white {
+    color: #fff;
+    text-shadow: 0 0 2px #000;
+}
+
+.black {
+    color: #000;
+    text-shadow: 0 0 2px #555;
+}
+
+.selected {
+    background-color: rgba(255, 255, 0, 0.5) !important;
+}
+
+.possible-move {
+    position: relative;
+}
+
+.possible-move::before {
+    content: '';
+    position: absolute;
+    width: 30%;
+    height: 30%;
+    border-radius: 50%;
+    background-color: rgba(0, 255, 0, 0.5);
+    z-index: 1;
+}
+/* -------------------- */
+/* --- Terminal App --- */
+/* -------------------- */
+.terminal-app .window-content {
+    padding: 0; /* La app maneja su propio padding */
+    background-color: #1e1e1e; /* Fondo oscuro típico de terminal */
+    color: #cccccc; /* Texto claro */
+    font-family: 'Consolas', 'Monaco', 'Menlo', monospace;
+    font-size: 13px; /* Tamaño de fuente para terminal */
+    line-height: 1.4;
+    display: flex; /* Para que el output y input ocupen espacio */
+    flex-direction: column;
+    overflow: hidden; /* Evitar doble scrollbar */
+}
+
+.terminal-output {
+    flex-grow: 1; /* Ocupar todo el espacio vertical disponible */
+    padding: 10px;
+    overflow-y: auto; /* Scroll para el historial */
+    white-space: pre-wrap; /* Conservar espacios y saltos de línea */
+    word-break: break-all; /* Romper palabras largas si es necesario */
+}
+
+.terminal-line {
+    min-height: 1.4em; /* Altura mínima de línea para que el cursor no salte */
+}
+
+.terminal-input-line {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    background-color: #252526; /* Un poco más claro para la línea de input */
+    border-top: 1px solid #333333;
+    flex-shrink: 0; /* No se encoja */
+}
+
+.terminal-prompt {
+    color: #65c791; /* Prompt verde */
+    margin-right: 5px;
+    white-space: nowrap; /* Evitar que el prompt se rompa */
+}
+
+.terminal-input {
+    flex-grow: 1;
+    background: none;
+    border: none;
+    color: #cccccc;
+    font-family: inherit;
+    font-size: inherit;
+    caret-color: #cccccc; /* Color del cursor de texto */
+}
+.terminal-input:focus {
+    outline: none;
+}
+/* -------------------- */
+/* -- Code Editor App - */
+/* -------------------- */
+.codeeditor-app .window-content {
+    padding: 0;
+    display: flex;
+    flex-direction: column; /* Toolbar arriba, textarea en medio, statusbar abajo */
+    background-color: #1e1e1e; /* Típico fondo de editor oscuro */
+}
+
+.codeeditor-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    background-color: var(--tertiary-bg);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* No se encoja */
+    gap: 5px; /* Espacio entre botones */
+}
+.codeeditor-toolbar button {
+    padding: 5px 10px;
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color-light);
+    color: var(--text-color);
+    border-radius: var(--control-border-radius);
+    font-size: 0.85em; /* Botones un poco más pequeños */
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.codeeditor-toolbar button:hover {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+    border-color: var(--accent-color);
+}
+.codeeditor-toolbar button i {
+    font-size: 0.9em;
+}
+.codeeditor-filename-display {
+    margin-left: 10px;
+    font-size: 0.9em;
+    color: var(--text-color-darker);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px; /* Evitar que sea demasiado largo */
+}
+
+
+.codeeditor-textarea {
+    flex-grow: 1;
+    width: 100%;
+    border: none;
+    padding: 10px;
+    font-family: 'Consolas', 'Monaco', 'Menlo', 'Courier New', monospace; /* Fuentes monoespaciadas */
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    background-color: #1e1e1e; /* Mismo que el window-content */
+    color: #d4d4d4; /* Texto típico de editor (VSCode) */
+    caret-color: #aeafad; /* Cursor del editor */
+    tab-size: 2; /* Definir el tamaño del tab (aunque lo insertamos como espacios) */
+    -moz-tab-size: 2;
+}
+.codeeditor-textarea:focus {
+    outline: none;
+}
+/* Opcional: Estilo para números de línea (requiere más JS) */
+/* .line-numbers { float: left; width: 30px; background: #2a2a2a; color: #666; text-align: right; padding-right: 5px; } */
+
+.codeeditor-statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 10px;
+    background-color: var(--tertiary-bg);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8em;
+    color: var(--text-color-darker);
+    flex-shrink: 0;
+}
+
+/* Para la ventana de vista previa HTML */
+.html-preview-window .window-content {
+    padding: 0; /* El iframe ocupará todo */
+    overflow: hidden; /* Evitar scrollbars dobles */
+}

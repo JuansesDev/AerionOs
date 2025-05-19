@@ -1,0 +1,16 @@
+/* Estilos generales para la aplicación webOS */
+
+/* Clase para el fondo de escritorio */
+.desktop-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747688882/default_background_kocr6r.png'); /* Actualizamos la URL predeterminada */
+    background-size: cover;
+    background-position: center;
+    z-index: -1;
+}
+
+/* Resto de los estilos... */

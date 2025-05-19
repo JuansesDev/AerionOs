@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraOS - Portfolio Edition v2</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/clock-calendar-widget.css">
+    <link rel="stylesheet" href="styles/taskbar-fix.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- Favicon SVG -->
+    <link rel="icon" type="image/svg+xml" href="public/auraOs.svg">
+    <!-- Favicon alternativo para navegadores antiguos -->
+    <link rel="alternate icon" href="favicon.ico">
+</head>
+<body>
+    <div id="aura-os-container">
+        <!-- Contenido dinámico (login o escritorio) -->
+    </div>
+
+    <template id="window-template">
+        <div class="window">
+            <div class="window-header">
+                <span class="window-icon"><i class="fas fa-question-circle"></i></span>
+                <span class="window-title">Ventana</span>
+                <div class="window-controls">
+                    <button class="window-control-button minimize-button" aria-label="Minimizar"><i class="fas fa-window-minimize"></i></button>
+                    <button class="window-control-button maximize-button" aria-label="Maximizar"><i class="far fa-square"></i></button>
+                    <button class="window-control-button close-button" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <!-- Contenido de la aplicación -->
+            </div>
+        </div>
+    </template>
+
+    <script src="js/main.js" type="module"></script>
+    <script src="js/service-worker-control.js"></script>
+</body>
+</html>

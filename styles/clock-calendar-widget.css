@@ -1,0 +1,133 @@
+#clock-calendar-widget {
+    position: absolute;
+    bottom: 50px; /* Posicionado encima de la barra de tareas */
+    right: 10px;
+    width: 280px;
+    background-color: rgba(30, 30, 32, 0.95);
+    border: 1px solid #444;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 15px;
+    z-index: 9999;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    opacity: 1;
+    transform: translateY(0);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #e0e0e0;
+}
+
+#clock-calendar-widget.hidden {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+}
+
+.widget-clock-time {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 5px;
+    color: #fff;
+}
+
+.widget-clock-date {
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 15px;
+    color: #bbb;
+}
+
+.calendar {
+    border-top: 1px solid #555;
+    padding-top: 10px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.calendar-nav-button {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #e0e0e0;
+}
+
+.calendar-nav-button:hover {
+    background-color: #444;
+}
+
+.current-month-year {
+    font-weight: bold;
+    font-size: 1rem;
+    color: #e0e0e0;
+}
+
+.calendar-days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 0.8rem;
+}
+
+.calendar-day-label {
+    padding: 5px 0;
+    color: #999;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.calendar-day {
+    text-align: center;
+    padding: 8px 0;
+    font-size: 0.9rem;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    cursor: pointer;
+}
+
+.calendar-day:hover:not(.empty) {
+    background-color: #444;
+}
+
+.calendar-day.today {
+    background-color: #0078d7;
+    color: white;
+    font-weight: bold;
+}
+
+.calendar-day.empty {
+    visibility: hidden;
+}
+
+/* Asegurarse de que el widget se muestre por encima de todo */
+#taskbar {
+    position: fixed !important; /* Forzar posición fija */
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 1000; /* Asegurarse que es menor que el widget */
+    top: auto !important; /* Eliminar cualquier posicionamiento desde arriba */
+}

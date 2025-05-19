@@ -1,0 +1,127 @@
+/* Estilos para el widget de calendario y reloj */
+#clock-calendar-widget {
+    position: absolute;
+    width: 300px;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--control-border-radius);
+    box-shadow: 0 5px 15px var(--shadow-color);
+    padding: 16px;
+    z-index: 2100; /* Por encima de la mayoría de elementos, pero debajo del menú contextual */
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    font-family: var(--font-family);
+}
+
+#clock-calendar-widget.hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    visibility: hidden;
+}
+
+/* Reloj y fecha */
+.widget-clock-time {
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--accent-color);
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.widget-clock-date {
+    font-size: 14px;
+    color: var(--text-color);
+    text-align: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--border-color-light);
+    padding-bottom: 12px;
+}
+
+/* Calendario */
+.calendar {
+    width: 100%;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.current-month-year {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-color);
+    text-align: center;
+}
+
+.calendar-nav-button {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.calendar-nav-button:hover {
+    background-color: var(--light-bg);
+}
+
+.calendar-days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 8px;
+}
+
+.calendar-day-label {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-color-darker);
+    padding: 5px 0;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.calendar-day {
+    text-align: center;
+    padding: 8px 0;
+    border-radius: var(--control-border-radius);
+    cursor: default;
+    color: var(--text-color);
+    font-size: 13px;
+    transition: background-color 0.15s ease;
+}
+
+.calendar-day:not(.empty):hover {
+    background-color: var(--light-bg);
+}
+
+.calendar-day.today {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+    font-weight: 500;
+}
+
+.calendar-day.empty {
+    color: transparent;
+    pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+    #clock-calendar-widget {
+        width: 260px;
+    }
+}
