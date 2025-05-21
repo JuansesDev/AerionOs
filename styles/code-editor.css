@@ -1,0 +1,95 @@
+/* Estilos para el Editor de Código con resaltado de sintaxis */
+
+.code-editor-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.codeeditor-textarea {
+    background: transparent;
+    color: rgba(255,255,255,0.8);
+    caret-color: white;
+    font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    tab-size: 2;
+    white-space: pre;
+}
+
+.code-mirror-wrapper {
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    background: var(--secondary-bg, #21252b);
+}
+
+/* Ajustes para el tema de Prism */
+.codeeditor-app pre[class*="language-"] {
+    margin: 0;
+    padding: 0;
+    background: var(--secondary-bg, #21252b);
+}
+
+.codeeditor-app code[class*="language-"] {
+    tab-size: 2;
+    font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+/* Barra de estado */
+.codeeditor-statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    height: 25px;
+    background-color: var(--tertiary-bg, #323842);
+    border-top: 1px solid var(--border-color, #181a1f);
+    font-size: 12px;
+    color: var(--text-color-darker, #7f848e);
+}
+
+.file-type-indicator {
+    font-weight: 500;
+    color: var(--accent-color, #61afef);
+}
+
+/* Toolbar */
+.codeeditor-toolbar {
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    background-color: var(--tertiary-bg, #323842);
+    border-bottom: 1px solid var(--border-color, #181a1f);
+}
+
+.codeeditor-toolbar button {
+    margin-right: 5px;
+    padding: 4px 8px;
+    background: var(--light-bg, #393f4a);
+    border: none;
+    border-radius: var(--control-border-radius, 4px);
+    color: var(--text-color, #abb2bf);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.codeeditor-toolbar button:hover {
+    background-color: var(--accent-color, #61afef);
+    color: var(--text-on-accent, #ffffff);
+}
+
+.codeeditor-toolbar button i {
+    font-size: 14px;
+}
+
+.codeeditor-filename-display {
+    margin-left: 10px;
+    font-size: 13px;
+    color: var(--text-color-darker, #7f848e);
+    font-style: italic;
+}

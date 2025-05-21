@@ -2,7 +2,6 @@
 import { App } from '../core/App.js';
 
 export class ChessApp extends App {
-    // ... (constructor y propiedades iguales a la respuesta anterior, incluyendo gameMode, aiPlayer, etc.)
     constructor(webOS) {
         super('chess', 'Ajedrez', 'fas fa-chess', webOS, {
             window: { width: 520, height: 600, minWidth: 450, minHeight: 520, customClass: 'chess-app' },
@@ -17,13 +16,13 @@ export class ChessApp extends App {
         this.gameMode = null;
         this.aiPlayer = 'black';
         this.isAiThinking = false;
-        this.gameOver = false; // Nuevo flag
+        this.gameOver = false;
 
         this.pieces = {
             'P': '♙', 'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔',
             'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚'
         };
-        this.pieceValues = { 'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 100 }; // Valores para capturas
+        this.pieceValues = { 'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 100 };
 
         this.boardElement = null;
         this.statusElement = null;
@@ -75,13 +74,10 @@ export class ChessApp extends App {
 
         contentElement.querySelector('.new-chess-game-button').addEventListener('click', () => this._showModeSelection());
 
-        // Actualizar los selectores para los nuevos botones de modo
         this.modeSelectionElement.querySelectorAll('.chess-mode-card, .chess-mode-button').forEach(element => {
             element.addEventListener('click', (e) => {
-                // Obtener el data-mode del botón o del contenedor padre si se hizo clic en otra parte de la tarjeta
                 const target = e.currentTarget;
                 const mode = target.dataset.mode || target.querySelector('[data-mode]')?.dataset.mode;
-
                 if (mode) {
                     this.gameMode = mode;
                     this._startGame();
@@ -90,10 +86,6 @@ export class ChessApp extends App {
         });
 
         this.boardElement.addEventListener('click', (e) => {
-            if (this.gameOver) return;
-            if (this.gameMode === '1P' && this.currentPlayer === this.aiPlayer && !this.isAiThinking) {
-                return;
-            }
             this._handleSquareClick(e);
         });
 
@@ -102,179 +94,85 @@ export class ChessApp extends App {
     }
 
     _showModeSelection() {
-        this.gameOver = false; // Resetear game over
+        this.gameOver = false;
         this.gameMode = null;
         this.boardElement.style.display = 'none';
         this.modeSelectionElement.style.display = 'flex';
-        this.modeSelectionElement.style.flexDirection = 'column';
-        this.statusElement.textContent = "Selecciona un modo de juego.";
+        this.modeSelectionElement.style.flexDirection = 'column'; // Asegurar que esté presente
+        this.gameStatus = "Selecciona un modo de juego.";
+        this.statusElement.textContent = this.gameStatus;
+        this.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
         this.activeWindowInstance.setTitle("Ajedrez - Elige Modo");
         this.selectedPiece = null;
         this.possibleMoves = [];
 
         if(this.boardElement) this.boardElement.innerHTML = '';
 
-        // Aplicar estilos avanzados al selector de modo
-        const style = document.createElement('style');
-        style.textContent = `
-            .chess-mode-header {
-                text-align: center;
-                margin-bottom: 20px;
-                color: var(--text-color, #eee);
-            }
-            .chess-mode-header h2 {
-                margin-bottom: 5px;
-                font-size: 1.8em;
-                font-weight: 500;
-            }
-            .chess-mode-subheader {
-                opacity: 0.8;
-                margin-top: 0;
-            }
-            .chess-mode-options {
-                display: flex;
-                justify-content: center;
-                gap: 25px;
-                margin-top: 15px;
-            }
-            .chess-mode-card {
-                background: rgba(40, 40, 40, 0.7);
-                border: 2px solid transparent;
-                border-radius: 10px;
-                padding: 20px;
-                width: 180px;
-                text-align: center;
-                transition: all 0.3s ease;
-                cursor: pointer;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            }
-            .chess-mode-card:hover {
-                border-color: var(--accent-color, #4a90e2);
-                transform: translateY(-5px);
-                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-            }
-            .chess-mode-icon {
-                font-size: 2.5em;
-                margin-bottom: 15px;
-                color: var(--accent-color, #4a90e2);
-                height: 60px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 10px;
-            }
-            .chess-mode-icon .fa-chess-pawn {
-                font-size: 1.2em;
-            }
-            .chess-mode-card h3 {
-                margin: 0 0 5px 0;
-                font-size: 1.2em;
-            }
-            .chess-mode-card p {
-                margin: 5px 0 20px;
-                opacity: 0.7;
-                font-size: 0.9em;
-            }
-            .chess-mode-button {
-                background: var(--accent-color, #4a90e2);
-                color: #fff;
-                border: none;
-                border-radius: 5px;
-                padding: 8px 16px;
-                font-size: 0.9em;
-                cursor: pointer;
-                transition: background 0.3s;
-                width: 100%;
-            }
-            .chess-mode-button:hover {
-                background: var(--accent-color-hover, #3a80d2);
-            }
-        `;
-
-        // Eliminar estilos anteriores para evitar duplicados
-        const oldStyle = document.getElementById('chess-mode-styles');
-        if (oldStyle) oldStyle.remove();
-
-        style.id = 'chess-mode-styles';
-        document.head.appendChild(style);
+        const existingStyle = document.getElementById('chess-mode-styles');
+        if (!existingStyle) {
+            const style = document.createElement('style');
+            style.id = 'chess-mode-styles';
+            style.textContent = `
+                .chess-mode-header { text-align: center; margin-bottom: 20px; color: var(--text-color, #eee); }
+                .chess-mode-header h2 { margin-bottom: 5px; font-size: 1.8em; font-weight: 500; }
+                .chess-mode-subheader { opacity: 0.8; margin-top: 0; }
+                .chess-mode-options { display: flex; justify-content: center; gap: 25px; margin-top: 15px; }
+                .chess-mode-card { background: rgba(40, 40, 40, 0.7); border: 2px solid transparent; border-radius: 10px; padding: 20px; width: 180px; text-align: center; transition: all 0.3s ease; cursor: pointer; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
+                .chess-mode-card:hover { border-color: var(--accent-color, #4a90e2); transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); }
+                .chess-mode-icon { font-size: 2.5em; margin-bottom: 15px; color: var(--accent-color, #4a90e2); height: 60px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+                .chess-mode-icon .fa-chess-pawn { font-size: 1.2em; }
+                .chess-mode-card h3 { margin: 0 0 5px 0; font-size: 1.2em; }
+                .chess-mode-card p { margin: 5px 0 20px; opacity: 0.7; font-size: 0.9em; }
+                .chess-mode-button { background: var(--accent-color, #4a90e2); color: #fff; border: none; border-radius: 5px; padding: 8px 16px; font-size: 0.9em; cursor: pointer; transition: background 0.3s; width: 100%; }
+                .chess-mode-button:hover { background: var(--accent-color-hover, #3a80d2); }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     _startGame() {
-        // ... (igual que la respuesta anterior)
         if (!this.gameMode) return;
         this.gameOver = false;
         this.modeSelectionElement.style.display = 'none';
         this.boardElement.style.display = 'grid';
+        this.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
         this.resetGameLogic();
     }
 
     resetGameLogic() {
-        // ... (igual, pero this.gameOver = false; ya está en _showModeSelection y _startGame)
         this.currentPlayer = 'white';
         this.selectedPiece = null;
         this.possibleMoves = [];
         this.isAiThinking = false;
         this._setupInitialBoard();
         this._renderBoard();
-        this._updateStatus(); // Este llamará a _checkForEndGame
+        // Inicialmente, no hay jaque ni fin de juego, _updateStatus se encargará
+        this._updateStatus(); // Esto también llamará a _checkForEndGame para el primer turno
         this.activeWindowInstance.setTitle(`Ajedrez - ${this.gameMode === '1P' ? 'vs IA' : '2 Jugadores'}`);
     }
 
-
     _setupInitialBoard() {
-        // Inicializar el tablero como una matriz 8x8
         this.board = Array(8).fill().map(() => Array(8).fill(null));
-
-        // Colocar piezas negras (mayúsculas para blancas, minúsculas para negras)
-        this.board[0][0] = 'r'; // Torres
-        this.board[0][7] = 'r';
-        this.board[0][1] = 'n'; // Caballos
-        this.board[0][6] = 'n';
-        this.board[0][2] = 'b'; // Alfiles
-        this.board[0][5] = 'b';
-        this.board[0][3] = 'q'; // Reina
-        this.board[0][4] = 'k'; // Rey
-
-        // Peones negros
-        for (let c = 0; c < 8; c++) {
-            this.board[1][c] = 'p';
-        }
-
-        // Colocar piezas blancas
-        this.board[7][0] = 'R'; // Torres
-        this.board[7][7] = 'R';
-        this.board[7][1] = 'N'; // Caballos
-        this.board[7][6] = 'N';
-        this.board[7][2] = 'B'; // Alfiles
-        this.board[7][5] = 'B';
-        this.board[7][3] = 'Q'; // Reina
-        this.board[7][4] = 'K'; // Rey
-
-        // Peones blancos
-        for (let c = 0; c < 8; c++) {
-            this.board[6][c] = 'P';
-        }
+        this.board[0] = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
+        this.board[1] = Array(8).fill('p');
+        this.board[6] = Array(8).fill('P');
+        this.board[7] = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'];
     }
+
     _renderBoard() {
         if (!this.boardElement) return;
-
         this.boardElement.innerHTML = '';
         this.boardElement.style.gridTemplateColumns = `repeat(8, 1fr)`;
         this.boardElement.style.gridTemplateRows = `repeat(8, 1fr)`;
 
-        // Crear el tablero de ajedrez con las casillas alternadas
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 const square = document.createElement('div');
                 square.classList.add('chess-square');
                 square.dataset.row = r;
                 square.dataset.col = c;
+                square.classList.add((r + c) % 2 === 0 ? 'light-square' : 'dark-square');
 
-                // Alternar colores para el patrón de tablero de ajedrez
-                const isLight = (r + c) % 2 === 0;
-                square.classList.add(isLight ? 'light-square' : 'dark-square');
-
-                // Añadir pieza si existe en esta posición
                 const piece = this.board[r][c];
                 if (piece) {
                     const pieceElement = document.createElement('div');
@@ -284,16 +182,12 @@ export class ChessApp extends App {
                     square.appendChild(pieceElement);
                 }
 
-                // Resaltar la pieza seleccionada
                 if (this.selectedPiece && this.selectedPiece.row === r && this.selectedPiece.col === c) {
                     square.classList.add('selected');
                 }
-
-                // Resaltar los movimientos posibles
                 if (this.possibleMoves.some(move => move.r === r && move.c === c)) {
                     square.classList.add('possible-move');
                 }
-
                 this.boardElement.appendChild(square);
             }
         }
@@ -308,20 +202,11 @@ export class ChessApp extends App {
         return r >= 0 && r < 8 && c >= 0 && c < 8;
     }
 
-    _addLinearMoves(moves, r, c, pieceColor, directions) { /* Sin cambios */ }
     _findKing(color, boardState = this.board) {
-        // Verificar que boardState esté definido y sea un array
-        if (!boardState || !Array.isArray(boardState)) {
-            console.error('Error: boardState no es válido', boardState);
-            return null;
-        }
-
+        if (!boardState || !Array.isArray(boardState)) return null;
         const kingPiece = color === 'white' ? 'K' : 'k';
         for(let r=0; r<8; r++) {
-            if (!boardState[r] || !Array.isArray(boardState[r])) {
-                console.error(`Error: boardState[${r}] no es válido`, boardState[r]);
-                continue; // Saltar esta fila si no es válida
-            }
+            if (!boardState[r] || !Array.isArray(boardState[r])) continue;
             for(let c=0; c<8; c++) {
                 if (boardState[r][c] === kingPiece) return {r,c};
             }
@@ -329,12 +214,9 @@ export class ChessApp extends App {
         return null;
     }
 
-
     _handleSquareClick(e) {
-        if (this.gameOver || !this.gameMode || this.isAiThinking) return;
-        // ... (resto de la lógica de _handleSquareClick igual a la respuesta anterior,
-        // pero al final, después de _updateStatus() y _renderBoard() del humano,
-        // Y antes de la llamada a _aiMove(), añadimos la comprobación de fin de juego)
+        if (this.gameOver || !this.gameMode) return;
+        if (this.gameMode === '1P' && this.currentPlayer === this.aiPlayer && this.isAiThinking) return;
 
         const squareEl = e.target.closest('.chess-square');
         if (!squareEl) return;
@@ -344,70 +226,65 @@ export class ChessApp extends App {
         const pieceCode = this.board[r][c];
 
         if (this.selectedPiece) {
-            const isValidMove = this.possibleMoves.some(move => move.r === r && move.c === c);
-            if (isValidMove) {
-                this._movePiece(this.selectedPiece.row, this.selectedPiece.col, r, c); // Mueve en this.board
+            const isPossibleMoveTarget = this.possibleMoves.some(move => move.r === r && move.c === c);
+            if (isPossibleMoveTarget) {
+                this._movePiece(this.selectedPiece.row, this.selectedPiece.col, r, c);
+
                 this.selectedPiece = null;
                 this.possibleMoves = [];
-                // No cambiar currentPlayer aquí todavía, _checkIfMoveIsValid lo hará si el movimiento es legal
-                // y luego _endTurn lo hará.
-
-                // Después de un movimiento humano, comprobar si el rey del humano está a salvo
-                const humanColor = this.currentPlayer;
-                if (this._isKingInCheck(humanColor, this.board)) {
-                    // Movimiento ilegal, el rey sigue/está en jaque. Revertir.
-                    // Esto es simplista, idealmente _calculatePossibleMoves ya filtra estos.
-                    // Por ahora, podemos simplemente no cambiar el turno.
-                    console.warn("Movimiento ilegal: el rey propio quedaría en jaque.");
-                    // Revertir el movimiento (necesitaríamos guardar el estado anterior)
-                    // O simplemente no cambiar el turno y que el jugador intente de nuevo.
-                    // Para esta versión, no cambiaremos el turno y se mostrará el jaque.
-                    this._updateStatus(); // Actualizará para mostrar el jaque
-                    this._renderBoard();
-                    return; // No proceder al turno de la IA
-                }
-
                 this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
-                this._updateStatus(); // Actualiza estado Y llama a _checkForEndGame
+
+                // Primero verifica si el juego terminó para el nuevo jugador, luego actualiza el estado
+                this._checkForEndGame(this.currentPlayer);
+                this._updateStatus();
                 this._renderBoard();
 
                 if (!this.gameOver && this.gameMode === '1P' && this.currentPlayer === this.aiPlayer) {
                     this._aiMove();
                 }
-            } else {
+            } else { // Clicked on another square (not a valid move for selected piece)
                 if (pieceCode && this._getPieceColor(pieceCode) === this.currentPlayer) {
+                    // Select this new piece of the current player
                     this.selectedPiece = { piece: pieceCode, color: this.currentPlayer, row: r, col: c };
-                    this.possibleMoves = this._calculatePossibleMovesForPiece(r,c,pieceCode, this.board);
+                    const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, this.board);
+                    this.possibleMoves = rawMoves.filter(move => {
+                        const tempBoard = this.board.map(arr => arr.slice());
+                        this._movePiece(r, c, move.r, move.c, tempBoard); // Simulate move
+                        return !this._isKingInCheck(this.currentPlayer, tempBoard); // Check if own king is safe
+                    });
                 } else {
+                    // Clicked on empty or opponent's piece: deselect
                     this.selectedPiece = null;
                     this.possibleMoves = [];
                 }
                 this._renderBoard();
             }
-        } else {
+        } else { // No piece selected yet
             if (pieceCode && this._getPieceColor(pieceCode) === this.currentPlayer) {
                 this.selectedPiece = { piece: pieceCode, color: this.currentPlayer, row: r, col: c };
-                this.possibleMoves = this._calculatePossibleMovesForPiece(r,c,pieceCode, this.board);
+                const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, this.board);
+                // Filter raw moves to get only legal ones (that don't leave own king in check)
+                this.possibleMoves = rawMoves.filter(move => {
+                    const tempBoard = this.board.map(arr => arr.slice());
+                    this._movePiece(r, c, move.r, move.c, tempBoard); // Simulate move
+                    return !this._isKingInCheck(this.currentPlayer, tempBoard); // Check if own king is safe
+                });
                 this._renderBoard();
             }
         }
     }
 
-
-    _movePiece(fromRow, fromCol, toRow, toCol, boardState = this.board) { // Aceptar un estado de tablero
+    _movePiece(fromRow, fromCol, toRow, toCol, boardState = this.board) {
         const pieceToMove = boardState[fromRow][fromCol];
         boardState[toRow][toCol] = pieceToMove;
         boardState[fromRow][fromCol] = null;
 
+        // Promoción de peón
         if (pieceToMove === 'P' && toRow === 0) boardState[toRow][toCol] = 'Q';
         if (pieceToMove === 'p' && toRow === 7) boardState[toRow][toCol] = 'q';
     }
 
-    // Renombrado para claridad, y acepta un boardState
     _calculatePossibleMovesForPiece(r, c, pieceCode, boardState) {
-        // ... (la lógica de _calculatePossibleMoves de la respuesta anterior va aquí)
-        // ... Asegúrate de que usa boardState en lugar de this.board para todas las comprobaciones
-        // ... y _getPieceColor(boardState[nr][nc])
         const moves = [];
         const type = pieceCode.toLowerCase();
         const pieceColor = this._getPieceColor(pieceCode);
@@ -415,12 +292,15 @@ export class ChessApp extends App {
         if (type === 'p') {
             const direction = pieceColor === 'white' ? -1 : 1;
             const startRow = pieceColor === 'white' ? 6 : 1;
+            // Avance normal
             if (this._isValidSquare(r + direction, c) && boardState[r + direction][c] === null) {
                 moves.push({ r: r + direction, c: c });
+                // Doble avance desde la posición inicial
                 if (r === startRow && this._isValidSquare(r + 2 * direction, c) && boardState[r + 2 * direction][c] === null) {
                     moves.push({ r: r + 2 * direction, c: c });
                 }
             }
+            // Capturas
             const captureOffsets = [-1, 1];
             for (const offset of captureOffsets) {
                 const captureR = r + direction;
@@ -432,15 +312,15 @@ export class ChessApp extends App {
                 }
             }
         }
-        if (type === 'r' || type === 'q') {
+        if (type === 'r' || type === 'q') { // Torre o Reina (movimientos rectos)
             const directions = [{dr:0,dc:1},{dr:0,dc:-1},{dr:1,dc:0},{dr:-1,dc:0}];
             this._addLinearMovesToBoard(moves, r, c, pieceColor, directions, boardState);
         }
-         if (type === 'b' || type === 'q') {
+        if (type === 'b' || type === 'q') { // Alfil o Reina (movimientos diagonales)
             const directions = [{dr:1,dc:1},{dr:1,dc:-1},{dr:-1,dc:1},{dr:-1,dc:-1}];
             this._addLinearMovesToBoard(moves, r, c, pieceColor, directions, boardState);
         }
-        if (type === 'n') {
+        if (type === 'n') { // Caballo
             const knightMoves = [
                 {dr: -2, dc: -1}, {dr: -2, dc: 1}, {dr: -1, dc: -2}, {dr: -1, dc: 2},
                 {dr: 1, dc: -2}, {dr: 1, dc: 2}, {dr: 2, dc: -1}, {dr: 2, dc: 1}
@@ -453,7 +333,7 @@ export class ChessApp extends App {
                 }
             });
         }
-        if (type === 'k') {
+        if (type === 'k') { // Rey
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     if (dr === 0 && dc === 0) continue;
@@ -468,7 +348,7 @@ export class ChessApp extends App {
         return moves;
     }
 
-    _addLinearMovesToBoard(moves, r, c, pieceColor, directions, boardState) { // Acepta boardState
+    _addLinearMovesToBoard(moves, r, c, pieceColor, directions, boardState) {
         for(const d of directions) {
             for(let i = 1; i < 8; i++) {
                 const nr = r + d.dr*i;
@@ -478,27 +358,26 @@ export class ChessApp extends App {
                     moves.push({r:nr, c:nc});
                 } else {
                     if(this._getPieceColor(boardState[nr][nc]) !== pieceColor) {
-                        moves.push({r:nr, c:nc});
+                        moves.push({r:nr, c:nc}); // Puede capturar
                     }
-                    break;
+                    break; // Bloqueado por pieza propia o enemiga
                 }
             }
         }
     }
 
-
-    // Comprueba si un jugador específico está en jaque en un estado de tablero dado
     _isKingInCheck(playerColor, boardState) {
         const kingPos = this._findKing(playerColor, boardState);
-        if (!kingPos) return false; // No hay rey, algo raro (o juego terminado)
-        const opponentColor = playerColor === 'white' ? 'black' : 'white';
+        if (!kingPos) return false; // No hay rey, algo raro (o ya capturado, que no debería pasar)
 
+        const opponentColor = playerColor === 'white' ? 'black' : 'white';
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 const pieceCode = boardState[r][c];
                 if (pieceCode && this._getPieceColor(pieceCode) === opponentColor) {
-                    const moves = this._calculatePossibleMovesForPiece(r, c, pieceCode, boardState);
-                    if (moves.some(move => move.r === kingPos.r && move.c === kingPos.c)) {
+                    // Obtenemos los movimientos "brutos" de la pieza oponente (sin filtrar por la seguridad de su propio rey)
+                    const opponentRawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, boardState);
+                    if (opponentRawMoves.some(move => move.r === kingPos.r && move.c === kingPos.c)) {
                         return true; // El rey está atacado
                     }
                 }
@@ -507,19 +386,17 @@ export class ChessApp extends App {
         return false;
     }
 
-    // Genera todos los movimientos legales para un jugador, filtrando aquellos que dejan al rey en jaque
     _getAllLegalMovesForPlayer(playerColor, boardState) {
         const legalMoves = [];
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 const pieceCode = boardState[r][c];
                 if (pieceCode && this._getPieceColor(pieceCode) === playerColor) {
-                    const possibleMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, boardState);
-                    for (const move of possibleMoves) {
-                        // Simular el movimiento en un tablero temporal
+                    const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, boardState);
+                    for (const move of rawMoves) {
                         const tempBoard = boardState.map(arr => arr.slice());
-                        this._movePiece(r, c, move.r, move.c, tempBoard);
-                        if (!this._isKingInCheck(playerColor, tempBoard)) {
+                        this._movePiece(r, c, move.r, move.c, tempBoard); // Simular el movimiento
+                        if (!this._isKingInCheck(playerColor, tempBoard)) { // Si el rey NO está en jaque después del movimiento
                             legalMoves.push({ from: {r, c, piece:pieceCode}, to: {r: move.r, c: move.c} });
                         }
                     }
@@ -529,103 +406,109 @@ export class ChessApp extends App {
         return legalMoves;
     }
 
-    _checkForEndGame(playerColor) { // Comprueba si playerColor está en jaque mate o ahogado
-        if (this.gameOver) return;
+    _checkForEndGame(playerWhoseTurnItIs) {
+        // No hacer nada si el juego ya terminó
+        if (this.gameOver) return true;
 
-        const legalMoves = this._getAllLegalMovesForPlayer(playerColor, this.board);
+        const legalMoves = this._getAllLegalMovesForPlayer(playerWhoseTurnItIs, this.board);
         if (legalMoves.length === 0) {
             this.gameOver = true;
-            if (this._isKingInCheck(playerColor, this.board)) {
-                this.gameStatus = `¡Jaque Mate! Ganan las ${playerColor === 'white' ? 'Negras' : 'Blancas'}.`;
+            if (this._isKingInCheck(playerWhoseTurnItIs, this.board)) {
+                this.gameStatus = `¡Jaque Mate! Ganan las ${playerWhoseTurnItIs === 'white' ? 'Negras' : 'Blancas'}.`;
+                if(this.statusElement) {
+                    this.statusElement.classList.add('check-mate-status');
+                    this.statusElement.classList.remove('check-status'); // Quitar jaque normal si es mate
+                }
             } else {
                 this.gameStatus = "¡Ahogado! Empate.";
+                 if(this.statusElement) this.statusElement.classList.add('stalemate-status');
             }
-            this.statusElement.textContent = this.gameStatus;
-            this.statusElement.classList.add(this._isKingInCheck(playerColor, this.board) ? 'check-mate-status' : 'stalemate-status'); // Añadir CSS para esto
             return true; // Juego terminado
         }
         return false; // Juego continúa
     }
 
     _updateStatus() {
-        if (!this.statusElement || this.gameOver) return;
+        if (!this.statusElement) return;
 
+        // Si el juego ha terminado, _checkForEndGame ya estableció this.gameStatus
+        if (this.gameOver) {
+            this.statusElement.textContent = this.gameStatus;
+            // Las clases de estado (mate, ahogado) ya se aplican en _checkForEndGame
+            return;
+        }
+
+        // Si el juego continúa
         let turnMessage = `Turno de las ${this.currentPlayer === 'white' ? 'Blancas' : 'Negras'}.`;
 
         // Verificar que el tablero esté inicializado antes de comprobar jaque
-        if (this.board && Array.isArray(this.board) && this.board.length === 8) {
+        // y que el juego no haya terminado ya (aunque el if de arriba debería cubrirlo)
+        if (this.board && Array.isArray(this.board) && this.board.length === 8 && !this.gameOver) {
             const kingCurrentlyInCheck = this._isKingInCheck(this.currentPlayer, this.board);
 
             if (kingCurrentlyInCheck) {
                 this.gameStatus = `¡Jaque! ${turnMessage}`;
                 this.statusElement.classList.add('check-status');
+                this.statusElement.classList.remove('check-mate-status', 'stalemate-status');
             } else {
                 this.gameStatus = turnMessage;
-                this.statusElement.classList.remove('check-status');
+                this.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
             }
-
-            // Comprobar fin de juego para el jugador actual DESPUÉS de actualizar el mensaje de turno
-            this._checkForEndGame(this.currentPlayer);
-        } else {
+        } else if (!this.gameOver) { // Si el tablero no está listo pero el juego no ha terminado (ej. al inicio)
             this.gameStatus = turnMessage;
         }
-
+        // Si this.gameOver es true, this.gameStatus ya fue establecido por _checkForEndGame
         this.statusElement.textContent = this.gameStatus;
     }
 
-    // --- Lógica de la IA Mejorada ---
     _aiMove() {
-        if (this.currentPlayer !== this.aiPlayer || this.isAiThinking || this.gameOver) return;
+        if (this.gameOver || this.currentPlayer !== this.aiPlayer || this.isAiThinking) return;
 
         this.isAiThinking = true;
-        this.statusElement.textContent = "IA (Negras) está pensando...";
-        this.selectedPiece = null; // Deseleccionar cualquier pieza del humano visualmente
+        this.statusElement.textContent = `IA (${this.aiPlayer === 'white' ? 'Blancas' : 'Negras'}) está pensando...`;
+        this.selectedPiece = null;
         this.possibleMoves = [];
         this._renderBoard(); // Actualizar tablero para quitar resaltados del humano
 
         setTimeout(() => {
-            let bestMove = null;
+            // Obtener solo movimientos legales para la IA
             const legalMoves = this._getAllLegalMovesForPlayer(this.aiPlayer, this.board);
 
             if (legalMoves.length === 0) {
-                // Esto ya debería haber sido capturado por _checkForEndGame después del turno del humano
-                // Pero es una doble comprobación.
-                console.log("IA no tiene movimientos legales.");
+                // Esto ya debería haber sido manejado por _checkForEndGame después del turno del humano,
+                // resultando en jaque mate o ahogado para la IA.
+                console.log("IA no tiene movimientos legales. El juego ya debería haber terminado.");
                 this.isAiThinking = false;
-                // _checkForEndGame ya debería haber establecido gameOver y el mensaje.
-                // this._updateStatus(); // Para asegurar que el mensaje de fin de juego se muestre
+                // _checkForEndGame y _updateStatus ya deberían haber reflejado el estado final.
                 return;
             }
 
-            // 1. Prioridad: Salir de Jaque
-            if (this._isKingInCheck(this.aiPlayer, this.board)) {
-                // Buscar movimientos que saquen al rey del jaque (ya filtrados por _getAllLegalMovesForPlayer)
-                // Simplemente elegimos uno al azar de los legales.
-                bestMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
-                console.log("IA: Saliendo de jaque con:", bestMove);
+            let bestMove = null;
+
+            // 1. Si está en jaque, cualquier movimiento legal lo sacará del jaque.
+            // No es necesario un bloque if específico aquí, ya que legalMoves solo contiene esos.
+
+            // 2. Intentar dar Jaque Mate (simplificado: solo dar Jaque)
+            let checkingMove = null;
+            for (const move of legalMoves) {
+                const tempBoard = this.board.map(arr => arr.slice());
+                this._movePiece(move.from.r, move.from.c, move.to.r, move.to.c, tempBoard);
+                // El oponente es el jugador que no es la IA
+                const opponentColor = this.aiPlayer === 'white' ? 'black' : 'white';
+                if (this._isKingInCheck(opponentColor, tempBoard)) {
+                    checkingMove = move;
+                    break;
+                }
             }
-
-            // 2. Prioridad: Dar Jaque Mate (muy difícil de implementar bien con IA simple)
-            // Omitido por simplicidad, pero se podría evaluar si algún movimiento lleva a Jaque Mate.
-
-            // 3. Prioridad: Capturar piezas (con valor) o dar Jaque
-            if (!bestMove) {
+            if (checkingMove) {
+                bestMove = checkingMove;
+            } else {
+                // 3. Capturar la pieza de mayor valor
                 let highValueCapture = null;
                 let highestValue = -1;
-                let checkingMove = null;
-
                 for (const move of legalMoves) {
-                    const targetPieceCode = this.board[move.to.r][move.to.c];
-                    // Simular el movimiento para ver si da jaque
-                    const tempBoard = this.board.map(arr => arr.slice());
-                    this._movePiece(move.from.r, move.from.c, move.to.r, move.to.c, tempBoard);
-
-                    if (this._isKingInCheck(this.currentPlayer === 'white' ? 'black' : 'white', tempBoard)) { // Si da jaque al oponente
-                        checkingMove = move; // Priorizar dar jaque
-                        // break; // Podríamos tomar el primer jaque encontrado
-                    }
-
-                    if (targetPieceCode) { // Es una captura
+                    const targetPieceCode = this.board[move.to.r][move.to.c]; // Pieza en la casilla de destino ANTES del movimiento
+                    if (targetPieceCode) {
                         const value = this.pieceValues[targetPieceCode.toLowerCase()] || 0;
                         if (value > highestValue) {
                             highestValue = value;
@@ -633,32 +516,30 @@ export class ChessApp extends App {
                         }
                     }
                 }
-
-                // Si encontramos un movimiento que da jaque, lo usamos
-                if (checkingMove) {
-                    bestMove = checkingMove;
-                } else if (highValueCapture) {
-                    // Si no hay jaque, pero hay una captura de alto valor, la usamos
+                if (highValueCapture) {
                     bestMove = highValueCapture;
                 } else {
-                    // Movimiento aleatorio entre los legales (mejor que nada)
+                    // 4. Movimiento aleatorio si no hay nada mejor
                     bestMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
                 }
             }
 
-            // Ejecutar el mejor movimiento encontrado
             if (bestMove) {
                 this._movePiece(bestMove.from.r, bestMove.from.c, bestMove.to.r, bestMove.to.c);
-                console.log("IA ejecuta movimiento:", bestMove);
+            } else {
+                 // Esto no debería ocurrir si legalMoves.length > 0
+                console.error("IA no pudo seleccionar un movimiento a pesar de tener opciones.");
+                this.isAiThinking = false;
+                return;
             }
 
             this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
             this.isAiThinking = false;
+
+            this._checkForEndGame(this.currentPlayer); // Comprobar si el humano está en mate/ahogado
             this._updateStatus();
             this._renderBoard();
 
-            // Comprobar fin de juego después del movimiento de la IA
-            this._checkForEndGame(this.currentPlayer);
-        }, 1000); // Simular tiempo de pensamiento de la IA
+        }, 1000);
     }
 }

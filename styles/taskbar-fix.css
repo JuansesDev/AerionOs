@@ -22,6 +22,7 @@
     right: 0;
     bottom: 40px; /* Debe coincidir con la altura de la barra de tareas */
     overflow: hidden;
+    z-index: 1; /* Asegura que el escritorio tenga un z-index más bajo que los modales */
 }
 
 /* Asegurar que el widget del calendario se posicione correctamente */
@@ -29,4 +30,41 @@
     position: fixed;
     bottom: 50px; /* 10px por encima de la barra de tareas */
     right: 10px;
+    z-index: 2100; /* Asegurar que esté por encima de las ventanas normales */
+}
+
+/* Evitar que el navegador web sea bloqueado por el widget de calendario */
+.browser-app .window-content {
+    z-index: 1; /* Mantener por debajo del widget de calendario */
+}
+
+/* Mejorar estilo del botón de proxy en el navegador */
+.browser-toolbar button[data-action="proxy"] {
+    background-color: var(--light-bg);
+    border-radius: var(--control-border-radius);
+    transition: all 0.2s ease;
+}
+
+.browser-toolbar button[data-action="proxy"].active {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
+
+/* Mejorar el estilo del mensaje de error en el navegador */
+.iframe-message {
+    padding: 30px;
+    text-align: center;
+}
+
+.iframe-message i {
+    font-size: 3em;
+    color: #e74c3c;
+    margin-bottom: 15px;
+}
+
+.error-details {
+    color: #888;
+    font-style: italic;
+    margin: 10px 0 20px;
+    font-size: 0.9em;
 }

@@ -87,7 +87,7 @@
 }
 
 .category-item.active {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(100, 120, 140, 0.45); /* Color azul opaco */
     color: #fff;
 }
 
@@ -263,7 +263,7 @@
 }
 
 .search-result-item:hover {
-    background-color: var(--accent-color);
+    background-color: rgba(100, 120, 140, 0.45); /* Color azul opaco en lugar de var(--accent-color) */
 }
 
 .search-result-item .app-icon {

@@ -120,7 +120,7 @@ export class FileExplorerApp extends App {
                 return false;
             }
             if (!isNavigatingHistory) { // Evitar alertas en navegación por historial si la ruta ya no es válida
-                alert(`Error: La ruta '${normalizedPath}' no es un directorio válido o no existe.`);
+                this.webOS.desktop.showAlertModal(`La ruta '${normalizedPath}' no es un directorio válido o no existe.`, 'Error de navegación', 'fa-exclamation-triangle');
             }
             if (this.pathBar) this.pathBar.value = this.currentPath;
             return false;
@@ -250,29 +250,179 @@ export class FileExplorerApp extends App {
     }
 
     _createNewFolder() {
-        const folderName = prompt("Nombre de la nueva carpeta:", "Nueva Carpeta");
-        if (folderName && folderName.trim()) {
-            const newPath = this._normalizePath(this.currentPath === '/' ? `/${folderName.trim()}` : `${this.currentPath}/${folderName.trim()}`);
-            if (this.webOS.fs.createDirectory(newPath)) {
-                this.navigateTo(this.currentPath, true);
-            } else {
-                alert("Error al crear la carpeta. ¿Ya existe, el nombre es inválido o la ruta padre no existe?");
+        this._showModal({
+            title: 'Nueva Carpeta',
+            icon: 'fa-folder-plus',
+            inputLabel: 'Nombre de la nueva carpeta:',
+            inputValue: 'Nueva Carpeta',
+            confirmButtonText: 'Crear',
+            validator: (value) => value && value.trim(),
+            onConfirm: (folderName) => {
+                const newPath = this._normalizePath(this.currentPath === '/' ? `/${folderName.trim()}` : `${this.currentPath}/${folderName.trim()}`);
+                if (this.webOS.fs.createDirectory(newPath)) {
+                    this.navigateTo(this.currentPath, true);
+                } else {
+                    this.webOS.desktop.showAlertModal("Error al crear la carpeta. ¿Ya existe, el nombre es inválido o la ruta padre no existe?", "Error", "fa-exclamation-triangle");
+                }
+            }
+        });
+    }
+
+    _createNewTextFile() {
+        this._showModal({
+            title: 'Nuevo Archivo de Texto',
+            icon: 'fa-file-medical',
+            inputLabel: 'Nombre del nuevo archivo:',
+            inputValue: 'nuevo_documento.txt',
+            confirmButtonText: 'Crear',
+            validator: (value) => {
+                value = value.trim();
+                return value && value.endsWith('.txt');
+            },
+            validationErrorMessage: "El nombre del archivo debe terminar en .txt",
+            onConfirm: (fileName) => {
+                const newPath = this._normalizePath(this.currentPath === '/' ? `/${fileName.trim()}` : `${this.currentPath}/${fileName.trim()}`);
+                if (this.webOS.fs.writeFile(newPath, "")) {
+                    this.navigateTo(this.currentPath, true);
+                } else {
+                    this.webOS.desktop.showAlertModal("Error al crear el archivo. ¿Ya existe o la ruta padre no existe?", "Error", "fa-exclamation-triangle");
+                }
+            }
+        });
+    }
+
+    _renameItem(path, oldName) {
+        this._showModal({
+            title: 'Renombrar',
+            icon: 'fa-edit',
+            inputLabel: `Nuevo nombre para "${oldName}":`,
+            inputValue: oldName,
+            confirmButtonText: 'Renombrar',
+            validator: (value) => value && value.trim() && value.trim() !== oldName,
+            validationErrorMessage: "El nuevo nombre debe ser diferente al actual",
+            onConfirm: (newName) => {
+                if (this.webOS.fs.rename(path, newName.trim())) {
+                    this.navigateTo(this.currentPath, true);
+                } else {
+                    this.webOS.desktop.showAlertModal("Error al renombrar. Verifique que el nuevo nombre sea válido y no exista ya.", "Error", "fa-exclamation-triangle");
+                }
+            }
+        });
+    }
+
+    _showModal(options) {
+        const overlay = document.createElement('div');
+        overlay.className = 'custom-modal-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal';
+
+        const header = document.createElement('div');
+        header.className = 'custom-modal-header';
+        header.innerHTML = `
+            <i class="fas ${options.icon || 'fa-question-circle'}"></i>
+            <h3>${options.title || 'Modal'}</h3>
+        `;
+
+        const body = document.createElement('div');
+        body.className = 'custom-modal-body';
+
+        const formGroup = document.createElement('div');
+        formGroup.className = 'form-group';
+
+        const label = document.createElement('label');
+        label.textContent = options.inputLabel || 'Ingrese un valor:';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = options.inputValue || '';
+        input.autocomplete = 'off';
+
+        // Mensaje de error (inicialmente oculto)
+        const errorMessage = document.createElement('div');
+        errorMessage.style.color = 'var(--error-color)';
+        errorMessage.style.fontSize = '0.85em';
+        errorMessage.style.marginTop = '5px';
+        errorMessage.style.display = 'none';
+
+        formGroup.appendChild(label);
+        formGroup.appendChild(input);
+        formGroup.appendChild(errorMessage);
+        body.appendChild(formGroup);
+
+        const footer = document.createElement('div');
+        footer.className = 'custom-modal-footer';
+
+        const cancelButton = document.createElement('button');
+        cancelButton.className = 'cancel';
+        cancelButton.textContent = options.cancelButtonText || 'Cancelar';
+
+        const confirmButton = document.createElement('button');
+        confirmButton.className = 'confirm';
+        confirmButton.textContent = options.confirmButtonText || 'Aceptar';
+
+        footer.appendChild(cancelButton);
+        footer.appendChild(confirmButton);
+
+        modal.appendChild(header);
+        modal.appendChild(body);
+        modal.appendChild(footer);
+        overlay.appendChild(modal);
+
+        document.body.appendChild(overlay);
+
+        // Enfocar el input automáticamente y seleccionar todo el texto
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 100);
+
+        // Manejar el evento Enter para confirmar
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (validateAndConfirm()) {
+                    closeModal();
+                }
+            }
+        });
+
+        // Manejar el evento Escape para cerrar
+        document.addEventListener('keydown', handleEscape);
+        function handleEscape(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeModal();
             }
         }
-    }
-    _createNewTextFile() {
-        const fileName = prompt("Nombre del nuevo archivo de texto (ej: nota.txt):", "nuevo_documento.txt");
-        if (fileName && fileName.trim()) {
-            if(!fileName.endsWith('.txt')) {
-                alert("El nombre del archivo debe terminar en .txt");
-                return;
+
+        cancelButton.addEventListener('click', closeModal);
+        confirmButton.addEventListener('click', () => {
+            if (validateAndConfirm()) {
+                closeModal();
             }
-            const newPath = this._normalizePath(this.currentPath === '/' ? `/${fileName.trim()}` : `${this.currentPath}/${fileName.trim()}`);
-            if (this.webOS.fs.writeFile(newPath, "")) {
-                this.navigateTo(this.currentPath, true);
-            } else {
-                alert("Error al crear el archivo. ¿Ya existe o la ruta padre no existe?");
+        });
+
+        function validateAndConfirm() {
+            const value = input.value;
+
+            if (options.validator && !options.validator(value)) {
+                errorMessage.textContent = options.validationErrorMessage || 'Entrada inválida. Por favor, verifique.';
+                errorMessage.style.display = 'block';
+                input.focus();
+                return false;
             }
+
+            if (options.onConfirm) {
+                options.onConfirm(value);
+            }
+
+            return true;
+        }
+
+        function closeModal() {
+            document.removeEventListener('keydown', handleEscape);
+            document.body.removeChild(overlay);
         }
     }
 
@@ -359,30 +509,26 @@ export class FileExplorerApp extends App {
         if (name.endsWith('.txt')) {
             this.webOS.launchApp('notepad', { filePathToOpen: path });
         } else if (/\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(name)) {
-            alert(`Simulación: Abriendo imagen "${name}" (Visor de imágenes no implementado).`);
+            this.webOS.desktop.showAlertModal(`Simulación: Abriendo imagen "${name}" (Visor de imágenes no implementado).`, "Visor de imágenes", "fa-image");
         } else {
-            alert(`No hay aplicación predeterminada para abrir el archivo "${name}".`);
-        }
-    }
-
-    _renameItem(path, oldName) {
-        const newName = prompt(`Nuevo nombre para "${oldName}":`, oldName);
-        if (newName && newName.trim() && newName.trim() !== oldName) {
-            if (this.webOS.fs.rename(path, newName.trim())) {
-                this.navigateTo(this.currentPath, true);
-            } else {
-                alert("Error al renombrar. Verifique que el nuevo nombre sea válido y no exista ya.");
-            }
+            this.webOS.desktop.showAlertModal(`No hay aplicación predeterminada para abrir el archivo "${name}".`, "Tipo de archivo no soportado", "fa-question-circle");
         }
     }
 
     _deleteItem(path, name) {
-        if (confirm(`¿Seguro que quieres eliminar "${name}"? Esta acción no se puede deshacer.`)) {
-            if (this.webOS.fs.delete(path)) {
-                this.navigateTo(this.currentPath, true);
-            } else {
-                alert("Error al eliminar el archivo/carpeta.");
-            }
-        }
+        this.webOS.desktop.showConfirmModal(
+            `¿Seguro que quieres eliminar "${name}"? Esta acción no se puede deshacer.`,
+            () => {
+                if (this.webOS.fs.delete(path)) {
+                    this.navigateTo(this.currentPath, true);
+                } else {
+                    this.webOS.desktop.showAlertModal("Error al eliminar el archivo/carpeta.", "Error", "fa-exclamation-triangle");
+                }
+            },
+            "Confirmar eliminación",
+            "Eliminar",
+            "Cancelar",
+            "fa-trash-alt"
+        );
     }
 }

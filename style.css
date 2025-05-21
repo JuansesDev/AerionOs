@@ -21,6 +21,7 @@
     --taskbar-height: 45px;         /* Altura de la barra de tareas */
     --window-border-radius: 6px;
     --control-border-radius: 4px;
+    --selected-bg: rgba(100, 120, 140, 0.45); /* Nuevo color azul opaco para elementos seleccionados */
 }
 
 /* -------------------- */
@@ -850,12 +851,25 @@ ul {
     background-color: var(--light-bg);
     border-color: var(--border-color-light);
 }
+.file-item.selected {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
+.file-item.selected .file-name,
+.file-item.selected .file-type,
+.file-item.selected .file-size {
+    color: var(--text-on-accent);
+}
 .file-item i {
     margin-right: 10px;
     color: var(--accent-color);
     width: 18px;
     text-align: center;
     font-size: 1.1em;
+}
+.file-item.selected i {
+    color: var(--text-on-accent);
 }
 .file-item .file-name { flex-grow: 1; color: var(--text-color); font-size: 0.95em;}
 .file-item .file-type, .file-item .file-size {
@@ -1446,7 +1460,7 @@ ul {
 }
 
 .selected {
-    background-color: rgba(255, 255, 0, 0.5) !important;
+    background-color: var(--selected-bg) !important;
 }
 
 .possible-move {
@@ -1602,4 +1616,191 @@ ul {
 .html-preview-window .window-content {
     padding: 0; /* El iframe ocupará todo */
     overflow: hidden; /* Evitar scrollbars dobles */
+}
+
+/* Estilos para el escritorio y los iconos */
+#desktop {
+    display: grid;
+    /* Ajusta estos valores según el tamaño deseado de tus iconos + padding/gap */
+    /* minmax(90px, 1fr) significa que cada columna será como mínimo de 90px
+       y se expandirá para llenar el espacio si hay menos columnas que el máximo. */
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    /* auto significa que la altura de la fila se ajusta al contenido más alto de esa fila,
+       pero como mínimo será de 100px. */
+    grid-template-rows: repeat(auto-fill, minmax(100px, auto));
+    gap: 10px; /* Espacio entre iconos */
+    padding: 10px; /* Espacio alrededor del borde del escritorio */
+    align-content: start; /* Alinea las filas de iconos al inicio verticalmente */
+    /* align-items: start; */ /* Alinea los iconos al inicio de su celda si la celda es más grande */
+    /* justify-items: center; */ /* Centra los iconos horizontalmente en su celda si la celda es más ancha */
+    overflow: auto; /* Para el caso de muchos iconos, aunque con auto-fill no debería ser tan necesario */
+    height: 100%;
+    box-sizing: border-box;
+    position: relative; /* Para que getBoundingClientRect() sea fiable para cálculos de drop */
+}
+
+.desktop-icon {
+    /* Estilos existentes del icono */
+    width: 80px;  /* Ancho del contenido del icono (no de la celda del grid) */
+    height: 90px; /* Alto del contenido del icono (incluyendo texto) */
+    padding: 5px; /* Padding interno del icono */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    cursor: grab;
+    border: 1px solid transparent;
+    user-select: none;
+    box-sizing: border-box;
+    transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+    /* Los iconos se colocarán por grid-column-start y grid-row-start */
+    /* Asegurar que el icono no se estire para llenar la celda si es más grande */
+    align-self: start;
+    justify-self: center; /* O start, según prefieras */
+}
+
+.desktop-icon i {
+    margin-bottom: 8px;
+    pointer-events: none; /* Para que el drag se inicie en el div y no en el <i> */
+}
+
+.desktop-icon span {
+    font-size: 0.8em;
+    word-break: break-word;
+    pointer-events: none;
+    max-height: 2.4em;
+    line-height: 1.2em; /* Para controlar mejor el número de líneas */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Limita a 2 líneas */
+    line-clamp: 2; /* Standard property for compatibility */
+    -webkit-box-orient: vertical;
+}
+
+.desktop-icon.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+    border: 1px dashed #aaa;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    transform: scale(1.05);
+    z-index: 1000; /* Para que esté por encima de otros iconos al arrastrar */
+}
+
+/* -------------------- */
+/* --- Modal Prompt --- */
+/* -------------------- */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.custom-modal {
+    background-color: var(--secondary-bg);
+    border-radius: var(--window-border-radius);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 5px 20px var(--shadow-color);
+    width: 320px;
+    max-width: 90%;
+    overflow: hidden;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.custom-modal-header {
+    padding: 10px 15px;
+    background-color: var(--tertiary-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+}
+
+.custom-modal-header i {
+    margin-right: 8px;
+    font-size: 1.1em;
+    color: var(--accent-color);
+}
+
+.custom-modal-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: normal;
+    color: var(--text-color);
+}
+
+.custom-modal-body {
+    padding: 15px;
+}
+
+.custom-modal-footer {
+    padding: 10px 15px;
+    background-color: var(--tertiary-bg);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.custom-modal-footer button {
+    padding: 6px 12px;
+    border-radius: var(--control-border-radius);
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.custom-modal-footer button.confirm {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
+
+.custom-modal-footer button.confirm:hover {
+    background-color: var(--accent-color-hover);
+}
+
+.custom-modal-footer button.cancel {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+}
+
+.custom-modal-footer button.cancel:hover {
+    background-color: #4a5260;
+}
+
+.custom-modal .form-group {
+    margin-bottom: 10px;
+}
+
+.custom-modal label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: var(--text-color-darker);
+}
+
+.custom-modal input {
+    width: 100%;
+    padding: 8px;
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--control-border-radius);
+    color: var(--text-color);
+}
+
+.custom-modal input:focus {
+    border-color: var(--accent-color);
+    outline: none;
 }

@@ -1,0 +1,54 @@
+/* Estilos para elementos seleccionables en el sistema */
+
+/* Color base para selecciones */
+:root {
+    --selection-color: rgba(100, 120, 140, 0.45); /* Azul grisáceo opaco */
+    --selection-border-color: rgba(100, 120, 150, 0.6); /* Borde ligeramente más oscuro */
+    --selection-text-color: var(--text-color); /* Mantener el color de texto normal */
+}
+
+/* Elementos generales seleccionados */
+.selected {
+    background-color: var(--selection-color) !important;
+    border-color: var(--selection-border-color) !important;
+}
+
+/* Archivos seleccionados en explorador */
+.file-item.selected {
+    background-color: var(--selection-color);
+    border-color: var(--selection-border-color);
+    color: var(--selection-text-color);
+}
+
+.file-item.selected .file-name,
+.file-item.selected .file-type,
+.file-item.selected .file-size {
+    color: var(--selection-text-color);
+}
+
+.file-item.selected i {
+    color: var(--text-color);
+}
+
+/* Elementos de lista activos */
+.list-item.active,
+.category-item.active {
+    background-color: var(--selection-color);
+    color: var(--selection-text-color);
+}
+
+/* Células del tablero de ajedrez seleccionadas */
+.chess-square.selected {
+    background-color: var(--selection-color) !important;
+}
+
+/* Movimientos posibles en ajedrez */
+.possible-move::before {
+    background-color: rgba(100, 120, 140, 0.5);
+}
+
+/* Evitar colores amarillos/verdes en otras partes de la aplicación */
+.calendar-day.today {
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
