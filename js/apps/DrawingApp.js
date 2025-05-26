@@ -3,7 +3,7 @@ import { App } from '../core/App.js';
 
 export class DrawingApp extends App {
     constructor(webOS) {
-        super('drawing', 'Paint', 'fas fa-paint-brush', webOS, {
+        super('drawing', 'AuraSketch', 'fas fa-paint-brush', webOS, {
             window: {
                 initialWidth: 800,
                 initialHeight: 600,
@@ -22,126 +22,168 @@ export class DrawingApp extends App {
         this.lineWidth = 5;
         this._resizeFrame = null;
         this._windowResizeHandler = null;
-        this._boundStartDrawing = (e) => this._startDrawing(e);
-        this._boundDraw = (e) => this._draw(e);
-        this._boundStopDrawing = () => this._stopDrawing();
-        this._boundHandleTouchStart = (e) => this._handleTouchStart(e);
-        this._boundHandleTouchMove = (e) => this._handleTouchMove(e);
+        // Bind de métodos una sola vez en el constructor
+        this._boundStartDrawing = this._startDrawing.bind(this);
+        this._boundDraw = this._draw.bind(this);
+        this._boundStopDrawing = this._stopDrawing.bind(this);
+        this._boundHandleTouchStart = this._handleTouchStart.bind(this);
+        this._boundHandleTouchMove = this._handleTouchMove.bind(this);
+        this._boundHandleResize = this._handleResize.bind(this);
     }
 
-    // Override renderContent from App class
+    /**
+     * Renderiza el contenido de la aplicación
+     * @param {HTMLElement} contentElement - Elemento donde se renderizará el contenido
+     * @param {Object} windowInstance - Instancia de la ventana
+     * @param {Object} launchOptions - Opciones de inicio
+     * @returns {Object} Instancia de la ventana
+     */
     renderContent(contentElement, windowInstance, launchOptions) {
-        console.log('Inicializando aplicación de dibujo...');
-        
-        // Store window instance reference
+        // Almacenar referencia a la ventana
         this.window = windowInstance;
         
-        // Set up cleanup before window is closed
+        // Configurar limpieza antes de cerrar la ventana
         this.window.on('beforeclose', () => this.cleanup());
         
-        // Set window content
+        // Establecer el contenido HTML
         contentElement.innerHTML = this._getWindowContent();
         
-        // Initialize canvas and event listeners after a short delay to ensure DOM is ready
+        // Inicializar canvas y event listeners después de un breve retraso
         setTimeout(async () => {
             try {
                 await this._initCanvas();
                 this._setupEventListeners();
-                console.log('Aplicación de dibujo lista');
+                // Aplicación lista
             } catch (error) {
-                console.error('Error al iniciar la aplicación de dibujo:', error);
+                // Error al iniciar la aplicación
             }
         }, 100);
         
         return this.window;
     }
 
+/**
+     * Genera el contenido HTML de la ventana de la aplicación
+     * @returns {string} HTML de la aplicación
+     */
     _getWindowContent() {
+        // Add link to external CSS file
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'styles/drawing-app.css';
+        document.head.appendChild(link);
+
         return `
-            <div class="drawing-app" style="display: flex; flex-direction: column; height: 100%;">
-                <div class="toolbar" style="padding: 8px; background: #f0f0f0; border-bottom: 1px solid #ddd; display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+            <div class="drawing-app">
+                <div class="toolbar">
                     <button class="tool-btn active" data-tool="pencil" title="Lápiz">
                         <i class="fas fa-pencil-alt"></i>
                     </button>
                     <button class="tool-btn" data-tool="eraser" title="Borrador">
                         <i class="fas fa-eraser"></i>
                     </button>
-                    <input type="color" id="color-picker" value="#000000" title="Color" style="width: 40px; height: 30px; padding: 0; border: 1px solid #999; border-radius: 4px; cursor: pointer;">
-                    <div style="display: flex; align-items: center; gap: 5px;">
-                        <label for="brush-size" style="font-size: 12px;">Tamaño:</label>
-                        <input type="range" id="brush-size" min="1" max="50" value="5" title="Tamaño del pincel" style="width: 80px;">
-                        <span id="brush-size-value" style="font-size: 12px; width: 30px; text-align: center;">5px</span>
+                    <input 
+                        type="color" 
+                        id="color-picker" 
+                        value="#000000" 
+                        title="Color" 
+                        class="color-picker"
+                    >
+                    <div class="brush-size-container">
+                        <label for="brush-size">Tamaño:</label>
+                        <input 
+                            type="range" 
+                            id="brush-size" 
+                            min="1" 
+                            max="50" 
+                            value="5" 
+                            title="Tamaño del pincel"
+                        >
+                        <span id="brush-size-value">5px</span>
                     </div>
-                    <button id="clear-canvas" title="Limpiar lienzo" style="margin-left: auto; padding: 4px 8px; background: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <button id="clear-canvas" title="Limpiar lienzo" class="clear-btn">
                         <i class="fas fa-trash"></i> Limpiar
                     </button>
                 </div>
-                <div class="canvas-container" style="flex: 1; overflow: hidden; position: relative; background: #f8f8f8; border: 1px solid #ddd;">
-                    <canvas id="drawing-canvas" style="display: block; background: white; width: 100%; height: 100%;"></canvas>
+                <div class="canvas-container">
+                    <canvas id="drawing-canvas"></canvas>
                 </div>
             </div>
-            <style>
-                .drawing-app {
-                    display: flex;
-                    flex-direction: column;
-                    height: 100%;
-                    background: #f0f0f0;
-                }
-                .toolbar {
-                    padding: 8px;
-                    background: #e0e0e0;
-                    border-bottom: 1px solid #ccc;
-                    display: flex;
-                    gap: 8px;
-                    align-items: center;
-                }
-                .tool-btn {
-                    padding: 6px 12px;
-                    border: 1px solid #999;
-                    background: #fff;
-                    cursor: pointer;
-                    border-radius: 4px;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                }
-                .tool-btn.active {
-                    background: #0078d7;
-                    color: white;
-                    border-color: #005a9e;
-                }
-                .tool-btn:hover {
-                    background: #e5e5e5;
-                }
-                .tool-btn.active:hover {
-                    background: #106ebe;
-                }
-                .canvas-container {
-                    flex: 1;
-                    overflow: hidden;
-                    position: relative;
-                }
-                #drawing-canvas {
-                    background: white;
-                    display: block;
-                    cursor: crosshair;
-                }
-                #clear-canvas {
-                    margin-left: auto;
-                }
-            </style>
         `;
     }
 
+    /**
+     * Guarda el contenido actual del canvas
+     * @returns {string|null} URL de datos de la imagen o null si no hay contenido
+     */
+    _saveCanvasContent() {
+        if (!this.canvas || this.canvas.width === 0 || this.canvas.height === 0) {
+            return null;
+        }
+        return this.canvas.toDataURL('image/png');
+    }
+
+    /**
+     * Restaura el contenido del canvas desde una URL de datos
+     * @param {string} imageDataUrl - URL de datos de la imagen a restaurar
+     * @param {number} width - Ancho del canvas
+     * @param {number} height - Alto del canvas
+     */
+    _restoreCanvasContent(imageDataUrl, width, height) {
+        if (!imageDataUrl) {
+            this.ctx.fillStyle = 'white';
+            this.ctx.fillRect(0, 0, width, height);
+            return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+            this.ctx.drawImage(img, 0, 0, width, height);
+        };
+        img.src = imageDataUrl;
+    }
+
+    /**
+     * Maneja el redimensionamiento del canvas
+     */
+    _handleResize() {
+        if (!this.canvas || !this.canvas.parentElement) return;
+        
+        const container = this.canvas.parentElement;
+        const rect = container.getBoundingClientRect();
+        const pixelRatio = window.devicePixelRatio || 1;
+        
+        // Guardar contenido actual
+        const currentContent = this._saveCanvasContent();
+        
+        // Establecer nuevo tamaño
+        this.canvas.width = Math.floor(rect.width * pixelRatio);
+        this.canvas.height = Math.floor(rect.height * pixelRatio);
+        
+        // Ajustar tamaño CSS
+        this.canvas.style.width = `${rect.width}px`;
+        this.canvas.style.height = `${rect.height}px`;
+        
+        // Configurar contexto
+        const ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+        ctx.scale(pixelRatio, pixelRatio);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // Restaurar contenido
+        this._restoreCanvasContent(currentContent, rect.width, rect.height);
+        this._updateContextStyle();
+    };
+
     async _initCanvas() {
-        if (!this.window || !this.window.contentElement) {
+        if (!this.window?.contentElement) {
             throw new Error('El contenido de la ventana no está disponible');
         }
         
         // Esperar un momento para asegurar que el DOM esté listo
         await new Promise(resolve => setTimeout(resolve, 50));
         
-        // Usar el contentElement de la ventana para buscar los elementos
+        // Obtener referencias a los elementos
         const container = this.window.contentElement.querySelector('.canvas-container');
         this.canvas = this.window.contentElement.querySelector('#drawing-canvas');
         
@@ -159,203 +201,134 @@ export class DrawingApp extends App {
         container.style.height = 'calc(100% - 50px)';
         container.style.position = 'relative';
         
-        // Función para guardar el contenido actual del canvas
-        const saveCanvasContent = () => {
-            if (!this.canvas || this.canvas.width === 0 || this.canvas.height === 0) {
-                return null;
-            }
-            return this.canvas.toDataURL('image/png');
+        // Función para manejar el redimensionamiento
+        const handleResize = () => {
+            cancelAnimationFrame(this._resizeFrame);
+            this._resizeFrame = requestAnimationFrame(() => this._handleResize());
         };
         
-        // Función para restaurar el contenido del canvas
-        const restoreCanvasContent = (imageDataUrl, width, height) => {
-            if (!imageDataUrl) {
-                this.ctx.fillStyle = 'white';
-                this.ctx.fillRect(0, 0, width, height);
-                return;
-            }
-            
-            const img = new Image();
-            img.onload = () => {
-                this.ctx.drawImage(img, 0, 0, width, height);
-            };
-            img.src = imageDataUrl;
-        };
+        // Configurar redimensionamiento inicial
+        this._handleResize();
         
-        // Función para redimensionar el canvas
-        const resizeCanvas = () => {
-            if (!this.canvas || !container) return;
-            
-            // Obtener dimensiones del contenedor
-            const rect = container.getBoundingClientRect();
-            const width = rect.width;
-            const height = rect.height;
-            const pixelRatio = window.devicePixelRatio || 1;
-            
-            // Guardar el contenido actual del canvas
-            const currentContent = saveCanvasContent();
-            
-            // Establecer el nuevo tamaño del canvas
-            this.canvas.width = Math.floor(width * pixelRatio);
-            this.canvas.height = Math.floor(height * pixelRatio);
-            
-            // Ajustar el tamaño CSS para que coincida con el tamaño lógico
-            this.canvas.style.width = `${width}px`;
-            this.canvas.style.height = `${height}px`;
-            
-            // Configurar el contexto
-            this.ctx.scale(pixelRatio, pixelRatio);
-            this.ctx.imageSmoothingEnabled = true;
-            this.ctx.imageSmoothingQuality = 'high';
-            
-            // Restaurar el contenido del canvas
-            restoreCanvasContent(currentContent, width, height);
-            
-            // Aplicar estilos actuales
-            this._updateContextStyle();
-        };
-        
-        // Guardar la referencia a la función para poder eliminarla luego
-        this._resizeCanvasHandler = resizeCanvas;
-        
-        // Configurar el redimensionamiento inicial
-        resizeCanvas();
-        
-        // Usar el evento de redimensionamiento de la ventana
-        if (this.window.on) {
-            // Usar requestAnimationFrame para asegurar que se ejecute después del redimensionamiento
-            const handleResize = () => {
-                cancelAnimationFrame(this._resizeFrame);
-                this._resizeFrame = requestAnimationFrame(() => {
-                    resizeCanvas();
-                });
-            };
-            
-            // Configurar listeners para diferentes eventos de redimensionamiento
-            this.window.on('resize', handleResize);
-            this.window.on('maximize', handleResize);
-            this.window.on('restore', handleResize);
-            
-            // Guardar referencia al manejador para poder eliminarlo luego
-            this._windowResizeHandler = handleResize;
+        // Configurar observador de redimensionamiento
+        if (typeof ResizeObserver === 'function') {
+            this._resizeObserver = new ResizeObserver(handleResize);
+            this._resizeObserver.observe(container);
         } else {
-            // Para el caso de que no exista el sistema de eventos de la ventana
-            const handleResize = () => {
-                cancelAnimationFrame(this._resizeFrame);
-                this._resizeFrame = requestAnimationFrame(() => {
-                    resizeCanvas();
-                });
-            };
-            
+            // Fallback para navegadores sin ResizeObserver
             window.addEventListener('resize', handleResize);
             this._windowResizeHandler = handleResize;
         }
     }
 
     _setupEventListeners() {
-        if (!this.window || !this.window.contentElement) {
+        if (!this.window?.contentElement) {
             console.error('No se pueden configurar los eventos: elementos del DOM no disponibles');
             return;
         }
-        
-        try {
-            // Botones de herramientas
-            const toolButtons = this.window.contentElement.querySelectorAll('.tool-btn');
-            toolButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const tool = e.target.dataset.tool || e.target.closest('.tool-btn')?.dataset.tool;
-                    if (tool) {
-                        this.currentTool = tool;
-                        toolButtons.forEach(btn => btn.classList.remove('active'));
-                        const target = e.target.classList.contains('tool-btn') ? e.target : e.target.closest('.tool-btn');
-                        if (target) target.classList.add('active');
-                        
-                        // Actualizar el contexto según la herramienta
-                        if (this.ctx) {
-                            if (this.currentTool === 'eraser') {
-                                this.ctx.strokeStyle = 'white';
-                                this.ctx.globalCompositeOperation = 'destination-out';
-                            } else {
-                                this.ctx.strokeStyle = this.currentColor;
-                                this.ctx.globalCompositeOperation = 'source-over';
-                            }
-                        }
-                    }
-                });
-            });
+
+        // Manejadores de eventos
+        const handleToolButtonClick = (e) => {
+            const button = e.target.closest('.tool-btn');
+            if (!button) return;
             
-            // Selector de color
-            const colorPicker = this.window.contentElement.querySelector('#color-picker');
-            if (colorPicker) {
-                colorPicker.value = this.currentColor;
-                colorPicker.addEventListener('input', (e) => {
-                    this.currentColor = e.target.value;
-                    this._updateContextStyle();
-                });
-            }
+            const tool = button.dataset.tool;
+            if (!tool) return;
             
-            // Control de tamaño de pincel
-            const brushSize = this.window.contentElement.querySelector('#brush-size');
-            if (brushSize) {
-                brushSize.value = this.lineWidth;
-                brushSize.addEventListener('input', (e) => {
-                    this.lineWidth = parseInt(e.target.value);
-                    this._updateContextStyle();
-                });
-            }
+            // Actualizar herramienta activa
+            this.currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => 
+                btn.classList.toggle('active', btn === button)
+            );
             
-            // Botón de limpiar
-            const clearButton = this.window.contentElement.querySelector('#clear-canvas');
-            if (clearButton) {
-                clearButton.addEventListener('click', () => {
-                    if (this.ctx && this.canvas) {
-                        this.ctx.fillStyle = 'white';
-                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                    }
-                });
-            }
-            
-            // Eventos del canvas
-            if (this.canvas) {
-                // Eliminar event listeners existentes para evitar duplicados
-                const newCanvas = this.canvas.cloneNode(true);
-                this.canvas.parentNode.replaceChild(newCanvas, this.canvas);
-                this.canvas = newCanvas;
-                this.ctx = this.canvas.getContext('2d');
-                
-                // Configurar estilos del contexto
-                this.ctx.strokeStyle = this.currentColor;
+            // Actualizar estilos del contexto
+            if (this.ctx) {
+                if (this.currentTool === 'eraser') {
+                    this.ctx.strokeStyle = 'white';
+                    this.ctx.globalCompositeOperation = 'destination-out';
+                } else {
+                    this.ctx.strokeStyle = this.currentColor;
+                    this.ctx.globalCompositeOperation = 'source-over';
+                }
                 this.ctx.lineWidth = this.lineWidth;
                 this.ctx.lineCap = 'round';
                 this.ctx.lineJoin = 'round';
-                
-                // Añadir event listeners
-                this.canvas.addEventListener('mousedown', (e) => this._startDrawing(e));
-                this.canvas.addEventListener('mousemove', (e) => this._draw(e));
-                this.canvas.addEventListener('mouseup', () => this._stopDrawing());
-                this.canvas.addEventListener('mouseout', () => this._stopDrawing());
-                
-                // Soporte para pantallas táctiles
-                this.canvas.addEventListener('touchstart', (e) => this._handleTouchStart(e), { passive: false });
-                this.canvas.addEventListener('touchmove', (e) => this._handleTouchMove(e), { passive: false });
-                this.canvas.addEventListener('touchend', () => this._stopDrawing());
-                
-                console.log('Eventos del canvas configurados correctamente');
             }
-            
-            // Configurar el evento de enfoque
-            if (this.window.on) {
-                this.window.on('focus', () => {
-                    if (this.ctx) {
-                        this.ctx.strokeStyle = this.currentTool === 'eraser' ? 'white' : this.currentColor;
-                        this.ctx.lineWidth = this.lineWidth;
-                        this.ctx.lineCap = 'round';
-                        this.ctx.lineJoin = 'round';
-                        this.ctx.globalCompositeOperation = this.currentTool === 'eraser' ? 'destination-out' : 'source-over';
-                    }
+        };
+
+        const handleColorChange = (e) => {
+            this.currentColor = e.target.value;
+            this._updateContextStyle();
+        };
+
+        const handleBrushSizeChange = (e) => {
+            this.lineWidth = parseInt(e.target.value);
+            const brushSizeValue = this.window.contentElement.querySelector('#brush-size-value');
+            if (brushSizeValue) {
+                brushSizeValue.textContent = `${this.lineWidth}px`;
+            }
+            this._updateContextStyle();
+        };
+
+        const handleClearCanvas = () => {
+            if (this.ctx && this.canvas) {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.fillStyle = 'white';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+        };
+
+        // Configurar event listeners
+        try {
+            // Botones de herramientas
+            document.querySelectorAll('.tool-btn').forEach(button => {
+                button.removeEventListener('click', handleToolButtonClick);
+                button.addEventListener('click', handleToolButtonClick);
+            });
+
+            // Selector de color
+            const colorPicker = this.window.contentElement.querySelector('#color-picker');
+            if (colorPicker) {
+                colorPicker.removeEventListener('input', handleColorChange);
+                colorPicker.addEventListener('input', handleColorChange);
+            }
+
+            // Control de tamaño de pincel
+            const brushSize = this.window.contentElement.querySelector('#brush-size');
+            if (brushSize) {
+                brushSize.removeEventListener('input', handleBrushSizeChange);
+                brushSize.addEventListener('input', handleBrushSizeChange);
+            }
+
+            // Botón de limpiar
+            const clearButton = this.window.contentElement.querySelector('#clear-canvas');
+            if (clearButton) {
+                clearButton.removeEventListener('click', handleClearCanvas);
+                clearButton.addEventListener('click', handleClearCanvas);
+            }
+
+            // Eventos del canvas
+            if (this.canvas) {
+                const canvasEvents = {
+                    mousedown: this._boundStartDrawing,
+                    mousemove: this._boundDraw,
+                    mouseup: this._boundStopDrawing,
+                    mouseout: this._boundStopDrawing,
+                    touchstart: this._boundHandleTouchStart,
+                    touchmove: this._boundHandleTouchMove,
+                    touchend: this._boundStopDrawing
+                };
+
+                // Remover listeners existentes
+                Object.entries(canvasEvents).forEach(([event, handler]) => {
+                    this.canvas.removeEventListener(event, handler);
+                });
+
+                // Agregar nuevos listeners
+                Object.entries(canvasEvents).forEach(([event, handler]) => {
+                    this.canvas.addEventListener(event, handler, { passive: false });
                 });
             }
-            
         } catch (error) {
             console.error('Error al configurar los eventos:', error);
         }
@@ -515,121 +488,118 @@ export class DrawingApp extends App {
     }
 
     _getCanvasCoordinates(e) {
-        // Obtener coordenadas del ratón o del toque
-        let x, y;
         if (!this.canvas) return null;
         
-        if (e.touches) {
-            // Para pantallas táctiles
-            const touch = e.touches[0];
-            const rect = this.canvas.getBoundingClientRect();
-            x = (touch.clientX - rect.left) / rect.width * this.canvas.width;
-            y = (touch.clientY - rect.top) / rect.height * this.canvas.height;
-            e.preventDefault();
-        } else {
-            // Para ratón
-            const rect = this.canvas.getBoundingClientRect();
-            x = (e.clientX - rect.left) / rect.width * this.canvas.width;
-            y = (e.clientY - rect.top) / rect.height * this.canvas.height;
-        }
+        const rect = this.canvas.getBoundingClientRect();
+        const touch = e.touches ? e.touches[0] : e;
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
         
-        // Asegurarse de que las coordenadas estén dentro de los límites del canvas
+        // Calcular coordenadas escaladas
+        let x = (touch.clientX - rect.left) * scaleX;
+        let y = (touch.clientY - rect.top) * scaleY;
+        
+        // Asegurar que las coordenadas estén dentro de los límites
         x = Math.max(0, Math.min(x, this.canvas.width));
         y = Math.max(0, Math.min(y, this.canvas.height));
+        
+        if (e.cancelable) {
+            e.preventDefault();
+        }
         
         return { x, y };
     }
 
-_draw(e) {
-    if (!this.isDrawing || !this.ctx) return;
-    
-    // Obtener coordenadas actuales
-    const pos = this._getCanvasCoordinates(e);
-    if (!pos) return;
-    
-    const x = pos.x;
-    const y = pos.y;
-    
-    // Calcular la distancia desde la última posición
-    const dist = Math.sqrt(Math.pow(x - this.lastX, 2) + Math.pow(y - this.lastY, 2));
-    
-    // Si la distancia es muy grande, dibujar una línea recta
-    if (dist > 10) {
-        const steps = Math.ceil(dist / 2);
-        const stepX = (x - this.lastX) / steps;
-        const stepY = (y - this.lastY) / steps;
+    _draw(e) {
+        if (!this.isDrawing || !this.ctx) return;
         
-        for (let i = 0; i < steps; i++) {
-            const currentX = this.lastX + stepX * i;
-            const currentY = this.lastY + stepY * i;
-            this._drawPoint(currentX, currentY);
+        // Obtener coordenadas actuales
+        const pos = this._getCanvasCoordinates(e);
+        if (!pos) return;
+        
+        const x = pos.x;
+        const y = pos.y;
+        
+        // Calcular la distancia desde la última posición
+        const dist = Math.sqrt(Math.pow(x - this.lastX, 2) + Math.pow(y - this.lastY, 2));
+        
+        // Si la distancia es muy grande, dibujar una línea recta
+        if (dist > 10) {
+            const steps = Math.ceil(dist / 2);
+            const stepX = (x - this.lastX) / steps;
+            const stepY = (y - this.lastY) / steps;
+            
+            for (let i = 0; i < steps; i++) {
+                const currentX = this.lastX + stepX * i;
+                const currentY = this.lastY + stepY * i;
+                this._drawPoint(currentX, currentY);
+            }
+        } else {
+            this._drawPoint(x, y);
         }
-    } else {
-        this._drawPoint(x, y);
+        
+        // Actualizar la última posición
+        this.lastX = x;
+        this.lastY = y;
     }
-    
-    // Actualizar la última posición
-    this.lastX = x;
-    this.lastY = y;
-}
 
-_drawPoint(x, y) {
-    if (!this.ctx) return;
-    
-    // Dibujar una línea desde la última posición a la actual
-    this.ctx.lineTo(x, y);
-    this.ctx.stroke();
-    
-    // Para líneas más suaves, dibujar un círculo en la posición actual
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, this.ctx.lineWidth / 2, 0, Math.PI * 2);
-    this.ctx.fill();
-    
-    // Preparar para la siguiente línea
-    this.ctx.beginPath();
-    this.ctx.moveTo(x, y);
-}
-
-_updateContextStyle() {
-    if (!this.ctx) return;
-    
-    // Configurar los estilos según la herramienta actual
-    if (this.currentTool === 'eraser') {
-        this.ctx.strokeStyle = 'white';
-        this.ctx.fillStyle = 'white';
-        this.ctx.globalCompositeOperation = 'destination-out';
-    } else {
-        this.ctx.strokeStyle = this.currentColor;
-        this.ctx.fillStyle = this.currentColor;
-        this.ctx.globalCompositeOperation = 'source-over';
-    }
-    
-    // Configurar el ancho de línea y otros estilos
-    this.ctx.lineWidth = this.lineWidth;
-    this.ctx.lineCap = 'round';
-    this.ctx.lineJoin = 'round';
-    this.ctx.imageSmoothingEnabled = true;
-    this.ctx.imageSmoothingQuality = 'high';
-}
-
-_stopDrawing() {
-    this.isDrawing = false;
-    if (this.ctx) {
+    _drawPoint(x, y) {
+        if (!this.ctx) return;
+        
+        // Dibujar una línea desde la última posición a la actual
+        this.ctx.lineTo(x, y);
+        this.ctx.stroke();
+        
+        // Para líneas más suaves, dibujar un círculo en la posición actual
         this.ctx.beginPath();
+        this.ctx.arc(x, y, this.ctx.lineWidth / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Preparar para la siguiente línea
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y);
     }
-}
 
-_handleTouchStart(e) {
-    if (e.cancelable) {
-        e.preventDefault();
+    _updateContextStyle() {
+        if (!this.ctx) return;
+        
+        // Configurar los estilos según la herramienta actual
+        if (this.currentTool === 'eraser') {
+            this.ctx.strokeStyle = 'white';
+            this.ctx.fillStyle = 'white';
+            this.ctx.globalCompositeOperation = 'destination-out';
+        } else {
+            this.ctx.strokeStyle = this.currentColor;
+            this.ctx.fillStyle = this.currentColor;
+            this.ctx.globalCompositeOperation = 'source-over';
+        }
+        
+        // Configurar el ancho de línea y otros estilos
+        this.ctx.lineWidth = this.lineWidth;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
     }
-    const touch = e.touches[0];
-    const mouseEvent = new MouseEvent('mousedown', {
-        clientX: touch.clientX,
-        clientY: touch.clientY
-    });
-    this._startDrawing(mouseEvent);
-}
+
+    _stopDrawing() {
+        this.isDrawing = false;
+        if (this.ctx) {
+            this.ctx.beginPath();
+        }
+    }
+
+    _handleTouchStart(e) {
+        if (e.cancelable) {
+            e.preventDefault();
+        }
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        this._startDrawing(mouseEvent);
+    }
 
     _handleTouchMove(e) {
         if (e.cancelable) {
@@ -643,50 +613,59 @@ _handleTouchStart(e) {
         this._draw(mouseEvent);
     }
 
-    // Cleanup method to be called before window is closed
+    /**
+     * Limpia los recursos antes de cerrar la ventana
+     */
     cleanup() {
-        console.log('Limpiando recursos de la aplicación de dibujo...');
-        
         try {
-            // Clean up animation frame
-            if (this._resizeFrame) {
-                cancelAnimationFrame(this._resizeFrame);
-                this._resizeFrame = null;
+            // Limpiar animation frame
+            cancelAnimationFrame(this._resizeFrame);
+            
+            // Limpiar observador de redimensionamiento
+            if (this._resizeObserver) {
+                this._resizeObserver.disconnect();
+                this._resizeObserver = null;
             }
             
-            // Clean up window event listeners
+            // Limpiar event listeners de la ventana
             if (this._windowResizeHandler) {
-                if (this.window && this.window.off) {
-                    this.window.off('resize', this._windowResizeHandler);
-                    this.window.off('maximize', this._windowResizeHandler);
-                    this.window.off('restore', this._windowResizeHandler);
+                if (this.window?.off) {
+                    ['resize', 'maximize', 'restore'].forEach(event => {
+                        this.window.off(event, this._boundHandleResize);
+                    });
                 } else if (window.removeEventListener) {
-                    window.removeEventListener('resize', this._windowResizeHandler);
+                    window.removeEventListener('resize', this._boundHandleResize);
                 }
                 this._windowResizeHandler = null;
             }
             
-            // Clean up canvas and its event listeners
+            // Limpiar canvas y sus event listeners
             if (this.canvas) {
-                this.canvas.removeEventListener('mousedown', this._boundStartDrawing);
-                this.canvas.removeEventListener('mousemove', this._boundDraw);
-                this.canvas.removeEventListener('mouseup', this._boundStopDrawing);
-                this.canvas.removeEventListener('mouseout', this._boundStopDrawing);
-                this.canvas.removeEventListener('touchstart', this._boundHandleTouchStart);
-                this.canvas.removeEventListener('touchmove', this._boundHandleTouchMove);
-                this.canvas.removeEventListener('touchend', this._boundStopDrawing);
+                const events = {
+                    mousedown: this._boundStartDrawing,
+                    mousemove: this._boundDraw,
+                    mouseup: this._boundStopDrawing,
+                    mouseout: this._boundStopDrawing,
+                    touchstart: this._boundHandleTouchStart,
+                    touchmove: this._boundHandleTouchMove,
+                    touchend: this._boundStopDrawing
+                };
                 
+                // Remover event listeners
+                Object.entries(events).forEach(([event, handler]) => {
+                    this.canvas.removeEventListener(event, handler);
+                });
+                
+                // Limpiar contexto
                 if (this.ctx) {
                     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.ctx = null;
                 }
                 
-                this.ctx = null;
                 this.canvas = null;
             }
-            
-            console.log('Recursos de la aplicación de dibujo limpiados correctamente');
         } catch (error) {
-            console.error('Error al limpiar los recursos de la aplicación de dibujo:', error);
+            // Error silencioso durante la limpieza
         }
     }
 }
