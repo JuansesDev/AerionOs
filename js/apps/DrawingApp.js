@@ -1,62 +1,57 @@
 // js/apps/DrawingApp.js
-export class DrawingApp {
-    constructor(os) {
-        this.os = os;
-        this.id = 'drawing';
-        this.name = 'Paint';
-        this.iconClass = 'fas fa-paint-brush';
-        this.window = null;
+import { App } from '../core/App.js';
+
+export class DrawingApp extends App {
+    constructor(webOS) {
+        super('drawing', 'Paint', 'fas fa-paint-brush', webOS, {
+            window: {
+                initialWidth: 800,
+                initialHeight: 600,
+                minWidth: 500,
+                minHeight: 400,
+                customClass: 'drawing-app-window'
+            },
+            allowMultipleInstances: true
+        });
+
         this.canvas = null;
         this.ctx = null;
         this.isDrawing = false;
         this.currentTool = 'pencil';
         this.currentColor = '#000000';
         this.lineWidth = 5;
+        this._resizeFrame = null;
+        this._windowResizeHandler = null;
+        this._boundStartDrawing = (e) => this._startDrawing(e);
+        this._boundDraw = (e) => this._draw(e);
+        this._boundStopDrawing = () => this._stopDrawing();
+        this._boundHandleTouchStart = (e) => this._handleTouchStart(e);
+        this._boundHandleTouchMove = (e) => this._handleTouchMove(e);
     }
 
-    async launch() {
-        if (this.window) {
-            this.window.bringToFront();
-            return this.window;
-        }
-
-        console.log('Creando ventana de dibujo...');
+    // Override renderContent from App class
+    renderContent(contentElement, windowInstance, launchOptions) {
+        console.log('Inicializando aplicación de dibujo...');
         
-        try {
-            // Crear la ventana primero
-            this.window = this.os.windowManager.createWindow(
-                this.id,           // appId
-                this.name,         // title
-                this.iconClass,    // iconClass
-                {                  // options
-                    initialWidth: 800,
-                    initialHeight: 600,
-                    minWidth: 500,
-                    minHeight: 400,
-                    onClose: () => this.onClose()
-                }
-            );
-            
-            console.log('Ventana creada, configurando contenido...');
-            
-            // Establecer el contenido de la ventana
-            const content = this._getWindowContent();
-            this.window.setContent(content);
-            
-            // Esperar un momento para asegurar que el DOM esté listo
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            console.log('Inicializando canvas...');
-            await this._initCanvas();
-            
-            console.log('Configurando eventos...');
-            this._setupEventListeners();
-            
-            console.log('Aplicación de dibujo lista');
-            
-        } catch (error) {
-            console.error('Error al iniciar la aplicación de dibujo:', error);
-        }
+        // Store window instance reference
+        this.window = windowInstance;
+        
+        // Set up cleanup before window is closed
+        this.window.on('beforeclose', () => this.cleanup());
+        
+        // Set window content
+        contentElement.innerHTML = this._getWindowContent();
+        
+        // Initialize canvas and event listeners after a short delay to ensure DOM is ready
+        setTimeout(async () => {
+            try {
+                await this._initCanvas();
+                this._setupEventListeners();
+                console.log('Aplicación de dibujo lista');
+            } catch (error) {
+                console.error('Error al iniciar la aplicación de dibujo:', error);
+            }
+        }, 100);
         
         return this.window;
     }
@@ -648,15 +643,18 @@ _handleTouchStart(e) {
         this._draw(mouseEvent);
     }
 
-    onClose() {
+    // Cleanup method to be called before window is closed
+    cleanup() {
+        console.log('Limpiando recursos de la aplicación de dibujo...');
+        
         try {
-            // Limpiar animation frames
+            // Clean up animation frame
             if (this._resizeFrame) {
                 cancelAnimationFrame(this._resizeFrame);
                 this._resizeFrame = null;
             }
             
-            // Limpiar event listeners
+            // Clean up window event listeners
             if (this._windowResizeHandler) {
                 if (this.window && this.window.off) {
                     this.window.off('resize', this._windowResizeHandler);
@@ -668,12 +666,27 @@ _handleTouchStart(e) {
                 this._windowResizeHandler = null;
             }
             
-            // Limpiar referencias
-            this.canvas = null;
-            this.ctx = null;
-            this.window = null;
+            // Clean up canvas and its event listeners
+            if (this.canvas) {
+                this.canvas.removeEventListener('mousedown', this._boundStartDrawing);
+                this.canvas.removeEventListener('mousemove', this._boundDraw);
+                this.canvas.removeEventListener('mouseup', this._boundStopDrawing);
+                this.canvas.removeEventListener('mouseout', this._boundStopDrawing);
+                this.canvas.removeEventListener('touchstart', this._boundHandleTouchStart);
+                this.canvas.removeEventListener('touchmove', this._boundHandleTouchMove);
+                this.canvas.removeEventListener('touchend', this._boundStopDrawing);
+                
+                if (this.ctx) {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                }
+                
+                this.ctx = null;
+                this.canvas = null;
+            }
+            
+            console.log('Recursos de la aplicación de dibujo limpiados correctamente');
         } catch (error) {
-            console.error('Error al limpiar la aplicación de dibujo:', error);
+            console.error('Error al limpiar los recursos de la aplicación de dibujo:', error);
         }
     }
 }
