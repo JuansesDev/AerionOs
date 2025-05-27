@@ -12,7 +12,7 @@ export class Window extends EventEmittable {
             width: 500, height: 400,
             minWidth: 250, minHeight: 150,
             x: null, y: null, // Posición inicial
-            resizable: false, // Para futuras implementaciones
+            resizable: true, // Para futuras implementaciones
             ...options
         };
 
@@ -90,6 +90,111 @@ export class Window extends EventEmittable {
         controls.querySelector('.minimize-button').addEventListener('click', () => this.minimize());
         this.maximizeButton = controls.querySelector('.maximize-button');
         this.maximizeButton.addEventListener('click', () => this.toggleMaximize());
+
+        if (this.options.resizable) {
+            const borders = [
+                'top-border', 'bottom-border', 'left-border', 'right-border',
+                'top-left-corner', 'top-right-corner', 'bottom-left-corner', 'bottom-right-corner'
+            ];
+            borders.forEach(borderClass => {
+                const element = this.element.querySelector('.' + borderClass);
+                if (element) {
+                    element.addEventListener('mousedown', (e) => this._onResizeStart(e, borderClass));
+                }
+            })
+        }
+    }
+
+    _onResizeStart(e, borderClass) {
+        if (this.isMaximized) return;
+        if (e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.isResizing = true;
+        this.resizingBorder = borderClass;
+
+        // Guarda el estado inicial, para poder calcular el cambio de tamaño
+        const rect = this.element.getBoundingClientRect();
+        this.startX = e.clientX;
+        this.startY = e.clientY;
+        this.startWidth = rect.width;
+        this.startHeight = rect.height;
+        this.startLeft = rect.left;
+        this.startTop = rect.top;
+
+        // Referencias para los listeners
+        this._onResizeMoveRef = (ev) => this._onResizeMove(ev);
+        this._onResizeEndRef = (ev) => this._onResizeEnd(ev);
+
+        // Cambiar el cursor y agregar clase de resizing
+        document.body.style.cursor = window.getComputedStyle(e.target).cursor || 'default';
+        this.element.classList.add('resizing');
+        document.addEventListener('mousemove', this._onResizeMoveRef);
+        document.addEventListener('mouseup', this._onResizeEndRef, { once: true });
+    }
+
+    _onResizeMove(e) {
+        if (!this.isResizing) return;
+
+        let dx = e.clientX - this.startX;
+        let dy = e.clientY - this.startY;
+
+        let newWidth = this.startWidth;
+        let newHeight = this.startHeight;
+        let newLeft = this.startLeft;
+        let newTop = this.startTop;
+
+        // Lógica de cambio de tamaño según el borde
+        if (this.resizingBorder.includes('right')) {
+            newWidth = this.startWidth + dx;
+        }
+        if (this.resizingBorder.includes('left')) {
+            newWidth = this.startWidth - dx;
+            newLeft = this.startLeft + dx;
+        }
+        if (this.resizingBorder.includes('bottom')) {
+            newHeight = this.startHeight + dy;
+        }
+        if (this.resizingBorder.includes('top')) {
+            newHeight = this.startHeight - dy;
+            newTop = this.startTop + dy;
+        }
+
+        // Respetar mínimos y ajustar posición solo si no se alcanzó el mínimo
+        let minWidth = this.options.minWidth;
+        let minHeight = this.options.minHeight;
+
+        // Si el nuevo ancho es menor que el mínimo, no mover el left
+        if (newWidth < minWidth) {
+            newLeft = this.startLeft + (this.startWidth - minWidth);
+            newWidth = minWidth;
+        }
+        // Si el nuevo alto es menor que el mínimo, no mover el top
+        if (newHeight < minHeight) {
+            newTop = this.startTop + (this.startHeight - minHeight);
+            newHeight = minHeight;
+        }
+
+        // Aplicar cambios
+        this.element.style.width = `${newWidth}px`;
+        this.element.style.height = `${newHeight}px`;
+
+        // Ajustar posición solo si se arrastra desde izquierda o arriba
+        if (this.resizingBorder.includes('left')) {
+            this.element.style.left = `${newLeft - this.element.offsetParent.getBoundingClientRect().left}px`;
+        }
+        if (this.resizingBorder.includes('top')) {
+            this.element.style.top = `${newTop - this.element.offsetParent.getBoundingClientRect().top}px`;
+        }
+    }
+
+    _onResizeEnd(e) {
+        this.isResizing = false;
+        this.resizingBorder = null;
+        document.body.style.cursor = 'default';
+        this.element.classList.remove('resizing');
+        document.removeEventListener('mousemove', this._onResizeMoveRef);
     }
 
     // Maneja el inicio del arrastre de la ventana
