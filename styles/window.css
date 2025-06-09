@@ -1,0 +1,82 @@
+.window {
+    position: absolute;
+    overflow: hidden;
+}
+
+/* Todos los bordes y corners deben estar posicionados con 'absolute', transparentes, y delante de todo */
+.top-border,
+.bottom-border,
+.left-border,
+.right-border,
+.top-left-corner,
+.top-right-corner,
+.bottom-left-corner,
+.bottom-right-corner {
+    position: absolute;
+    background-color: transparent;
+    z-index: 100;
+}
+
+.top-border {
+    top: 0;
+    left: 5px;
+    right: 5px;
+    height: 5px;
+    cursor: ns-resize;
+}
+
+.bottom-border {
+    bottom: 0;
+    left: 5px;
+    right: 5px;
+    height: 5px;
+    cursor: ns-resize;
+}
+
+.left-border {
+    top: 5px;
+    bottom: 5px;
+    left: 0;
+    width: 5px;
+    cursor: ew-resize;
+}
+
+.right-border {
+    top: 5px;
+    bottom: 5px;
+    right: 0;
+    width: 5px;
+    cursor: ew-resize;
+}
+
+.top-left-corner {
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    cursor: nwse-resize;
+}
+
+.top-right-corner {
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    cursor: nesw-resize;
+}
+
+.bottom-left-corner {
+    bottom: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    cursor: nesw-resize;
+}
+
+.bottom-right-corner {
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    cursor: nwse-resize;
+}
