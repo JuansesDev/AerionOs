@@ -20,6 +20,7 @@ import { MinesweeperApp } from './apps/MinesweeperApp.js';
 import { ChessApp } from './apps/ChessApp.js';
 import { TerminalApp } from './apps/TerminalApp.js'; // Importar Terminal
 import { CodeEditorApp } from './apps/CodeEditorApp.js'; // Importar Editor de Código
+import { DrawingApp } from './apps/DrawingApp.js'; // Importar Aplicación de Dibujo
 
 // Hacer Window accesible globalmente para que WindowManager pueda instanciarla
 // Esta es una solución temporal para la estructura actual. En un sistema más complejo
@@ -121,7 +122,8 @@ class WebOS {
             'minesweeper': new MinesweeperApp(this), // Registrar Buscaminas
             'chess': new ChessApp(this), // Registrar Ajedrez
             'terminal': new TerminalApp(this), // Registrar Terminal
-            'codeeditor': new CodeEditorApp(this) // Registrar Editor de Código
+            'codeeditor': new CodeEditorApp(this), // Registrar Editor de Código
+            'drawing': new DrawingApp(this) // Registrar Aplicación de Dibujo
         };
         console.log("AuraOS: Apps registered:", Object.keys(this.apps));
     }
@@ -131,7 +133,7 @@ class WebOS {
         // Limpiar iconos existentes por si se llama múltiples veces (ej. refresh)
         this.desktop.element.querySelectorAll('.desktop-icon').forEach(icon => icon.remove());
 
-        const defaultIcons = ['files', 'notepad', 'calculator', 'browser', 'settings', 'minesweeper', 'chess', 'terminal', 'codeeditor'];
+        const defaultIcons = ['files', 'notepad', 'calculator', 'browser', 'settings', 'minesweeper', 'chess', 'terminal', 'codeeditor', 'drawing'];
         defaultIcons.forEach(appId => {
             const app = this.apps[appId];
             if (app) {
