@@ -29,9 +29,9 @@ export class NotepadApp extends App {
         this.textarea = contentElement.querySelector('.notepad-textarea');
         this.filenameDisplay = contentElement.querySelector('.notepad-filename-display'); // No es un input
 
-        contentElement.querySelector('.notepad-toolbar').addEventListener('click', (e) => {
+        contentElement.querySelector('.notepad-toolbar').addEventListener('click', async (e) => {
             const button = e.target.closest('button[data-action]');
-            if (button) this._handleToolbarAction(button.dataset.action);
+            if (button) await this._handleToolbarAction(button.dataset.action);
         });
 
         this.textarea.addEventListener('input', () => {
@@ -76,10 +76,14 @@ export class NotepadApp extends App {
         }
     }
 
-    _handleBeforeClose(windowInstance) {
+    async _handleBeforeClose(windowInstance) {
         if (this.isDirty) {
-            const confirmation = confirm("Tienes cambios sin guardar. ¿Quieres guardar antes de cerrar?");
-            if (confirmation) {
+            const shouldSave = await this.webOS.modals.showConfirm(
+                "Tienes cambios sin guardar. ¿Quieres guardar antes de cerrar?", 
+                'Cambios sin guardar', 
+                'fa-exclamation-triangle'
+            );
+            if (shouldSave) {
                 const saved = this._saveFile(windowInstance); // saveFile ahora devuelve true/false
                 if (!saved) {
                     // Si el guardado falla (ej. el usuario cancela "Guardar Como"),
@@ -93,7 +97,7 @@ export class NotepadApp extends App {
         }
     }
 
-    _handleToolbarAction(action) {
+    async _handleToolbarAction(action) {
         const currentWindow = this.webOS.windowManager.getWindow(this.instances[this.instances.length -1]?.id); // Asumimos que la última instancia es la relevante
         if (!currentWindow) {
             console.error("Notepad: No se pudo obtener la instancia de la ventana actual.");
@@ -103,18 +107,28 @@ export class NotepadApp extends App {
         switch(action) {
             case 'new':
                 if (this.isDirty) {
-                    if (!confirm("Hay cambios sin guardar. ¿Descartarlos y crear un nuevo archivo?")) return;
+                    const shouldDiscard = await this.webOS.modals.showConfirm(
+                        "Hay cambios sin guardar. ¿Descartarlos y crear un nuevo archivo?", 
+                        'Cambios sin guardar', 
+                        'fa-exclamation-triangle'
+                    );
+                    if (!shouldDiscard) return;
                 }
                 this._newFile(currentWindow);
                 break;
             case 'open':
                 if (this.isDirty) {
-                    if (!confirm("Hay cambios sin guardar. ¿Descartarlos y abrir otro archivo?")) return;
+                    const shouldDiscard = await this.webOS.modals.showConfirm(
+                        "Hay cambios sin guardar. ¿Descartarlos y abrir otro archivo?", 
+                        'Cambios sin guardar', 
+                        'fa-exclamation-triangle'
+                    );
+                    if (!shouldDiscard) return;
                 }
-                this._openFilePrompt(currentWindow);
+                await this._openFilePrompt(currentWindow);
                 break;
-            case 'save': this._saveFile(currentWindow); break;
-            case 'save-as': this._saveFileAs(currentWindow); break;
+            case 'save': await this._saveFile(currentWindow); break;
+            case 'save-as': await this._saveFileAs(currentWindow); break;
         }
     }
 
@@ -151,25 +165,33 @@ export class NotepadApp extends App {
             this.isDirty = false;
             this._updateWindowTitle(windowInstance);
         } else {
-            alert(`Error: No se pudo abrir el archivo "${path}".`);
+            this.webOS.modals.showAlert(`Error: No se pudo abrir el archivo "${path}".`, 'Error al abrir archivo', 'fa-exclamation-triangle');
             this._newFile(windowInstance); // Volver a un estado limpio
         }
     }
 
-    _openFilePrompt(windowInstance) {
+    async _openFilePrompt(windowInstance) {
         const defaultPath = this.currentFilePath ?
             this.currentFilePath.substring(0, this.currentFilePath.lastIndexOf('/') + 1) :
             "/Documents/";
-        const path = prompt("Ingresa la ruta completa del archivo a abrir:", defaultPath);
+        
+        try {
+            const path = await this.webOS.modals.showFileOpenDialog(
+                defaultPath,
+                ['.txt']
+            );
 
-        if (path && path.trim()) {
-            this._loadFile(path.trim(), windowInstance);
+            if (path) {
+                this._loadFile(path, windowInstance);
+            }
+        } catch (error) {
+            console.log('Apertura de archivo cancelada');
         }
     }
 
-    _saveFile(windowInstance) { // Devuelve true si se guardó, false si se canceló o falló
+    async _saveFile(windowInstance) { // Devuelve true si se guardó, false si se canceló o falló
         if (!this.currentFilePath) {
-            return this._saveFileAs(windowInstance);
+            return await this._saveFileAs(windowInstance);
         }
 
         const success = this.webOS.fs.writeFile(this.currentFilePath, this.textarea.value);
@@ -180,12 +202,12 @@ export class NotepadApp extends App {
             // Podríamos tener una notificación "Archivo guardado"
             return true;
         } else {
-            alert("Error al guardar el archivo.");
+            this.webOS.modals.showAlert("Error al guardar el archivo.", 'Error de guardado', 'fa-exclamation-triangle');
             return false;
         }
     }
 
-    _saveFileAs(windowInstance) { // Devuelve true si se guardó, false si se canceló o falló
+    async _saveFileAs(windowInstance) { // Devuelve true si se guardó, false si se canceló o falló
         let defaultDir = "/Documents/";
         let defaultName = "Sin título.txt";
 
@@ -194,45 +216,52 @@ export class NotepadApp extends App {
             defaultName = this.currentFilePath.substring(this.currentFilePath.lastIndexOf('/') + 1);
         }
 
-        const newPath = prompt("Guardar como (ruta completa y nombre de archivo):", defaultDir + defaultName);
+        // Usar el modal del explorador de archivos
+        const newPath = await this.webOS.modals.showFileSaveDialog(
+            defaultDir, 
+            defaultName, 
+            ['.txt']
+        );
 
-        if (!newPath || !newPath.trim()) return false; // Usuario canceló
-
-        const trimmedPath = newPath.trim();
-        if (!trimmedPath.endsWith('.txt')) {
-            alert("El nombre del archivo debe terminar en .txt");
-            return false;
-        }
+        if (!newPath) return false; // Usuario canceló
 
         // Comprobar si el archivo ya existe y pedir confirmación
-        if (this.webOS.fs.pathExists(trimmedPath)) {
-            if (!confirm(`El archivo "${trimmedPath}" ya existe. ¿Deseas sobrescribirlo?`)) {
-                return false; // Usuario canceló la sobrescritura
-            }
+        if (this.webOS.fs.pathExists(newPath)) {
+            const shouldOverwrite = await this.webOS.modals.showConfirm(
+                `El archivo "${newPath}" ya existe. ¿Deseas sobrescribirlo?`, 
+                'Archivo existe', 
+                'fa-exclamation-triangle'
+            );
+            if (!shouldOverwrite) return false;
         }
 
-        const success = this.webOS.fs.writeFile(trimmedPath, this.textarea.value);
+        const success = this.webOS.fs.writeFile(newPath, this.textarea.value);
         if (success) {
-            this.currentFilePath = trimmedPath;
+            this.currentFilePath = newPath;
             this.originalContent = this.textarea.value;
             this.isDirty = false;
             this._updateWindowTitle(windowInstance);
             return true;
         } else {
-            alert("Error al guardar el archivo como.");
+            this.webOS.modals.showAlert("Error al guardar el archivo como.", 'Error de guardado', 'fa-exclamation-triangle');
             return false;
         }
     }
 
     // Sobrescribimos onRelaunch para manejar la apertura de un archivo en una instancia existente
     // o crear una nueva si el modo es allowMultipleInstances y se pide un archivo específico.
-    onRelaunch(windowInstance, launchOptions) {
+    async onRelaunch(windowInstance, launchOptions) {
         super.onRelaunch(windowInstance, launchOptions);
         if (launchOptions && launchOptions.filePathToOpen) {
             // Si ya hay una instancia y se pide abrir un archivo,
             // preguntamos si se quieren descartar cambios en la instancia actual (si los hay)
             if (this.isDirty) {
-                if (!confirm("Tienes cambios sin guardar en el archivo actual de esta ventana. ¿Descartar y abrir el nuevo archivo aquí?")) {
+                const shouldDiscard = await this.webOS.modals.showConfirm(
+                    "Tienes cambios sin guardar en el archivo actual de esta ventana. ¿Descartar y abrir el nuevo archivo aquí?", 
+                    'Cambios sin guardar', 
+                    'fa-exclamation-triangle'
+                );
+                if (!shouldDiscard) {
                     // Si el usuario cancela, podríamos optar por abrir en una nueva instancia si está permitido.
                     // Esto complica la lógica de cuál instancia es `this`.
                     // Por ahora, si cancela, no hacemos nada con esta instancia.

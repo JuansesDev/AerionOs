@@ -44,10 +44,38 @@ export class FileSystem {
         if (changed) this._saveFS();
     }
 
+    // Normaliza una ruta eliminando barras múltiples y resolviendo referencias relativas
+    _normalizePath(path) {
+        if (!path || path === '/') return '/';
+        
+        // Asegurar que comience con '/'
+        if (!path.startsWith('/')) {
+            path = '/' + path;
+        }
+        
+        // Dividir por '/' y filtrar elementos vacíos
+        const parts = path.split('/').filter(p => p && p !== '.');
+        const normalized = [];
+        
+        for (const part of parts) {
+            if (part === '..') {
+                // Ir al directorio padre (eliminar último elemento si existe)
+                if (normalized.length > 0) {
+                    normalized.pop();
+                }
+            } else {
+                normalized.push(part);
+            }
+        }
+        
+        return normalized.length === 0 ? '/' : '/' + normalized.join('/');
+    }
+
     _resolvePath(path, createIntermediate = false) {
-        const parts = path.split('/').filter(p => p);
+        const normalizedPath = this._normalizePath(path);
+        const parts = normalizedPath.split('/').filter(p => p);
         let current = this.fs['/'];
-        if (path === '/') return current;
+        if (normalizedPath === '/') return current;
 
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
@@ -100,9 +128,41 @@ export class FileSystem {
     }
 
     writeFile(path, content) {
-        const { parentNode, name } = this._getParentNodeAndName(path);
-        if (parentNode && parentNode.type === 'folder' && name) {
-             const existingNode = parentNode.children[name];
+        const normalizedPath = this._normalizePath(path);
+        const { parentNode, name } = this._getParentNodeAndName(normalizedPath);
+        
+        if (!parentNode) {
+            // Intentar crear los directorios intermedios
+            const pathParts = normalizedPath.split('/').filter(p => p);
+            if (pathParts.length === 0) return false; // No se puede escribir en la raíz
+            
+            // Quitar el nombre del archivo para obtener el directorio padre
+            const fileName = pathParts.pop();
+            const parentDir = pathParts.length > 0 ? '/' + pathParts.join('/') : '/';
+            
+            // Crear directorios intermedios si no existen
+            this._createDirectoriesRecursively(parentDir);
+            
+            // Intentar nuevamente
+            const { parentNode: newParentNode, name: newName } = this._getParentNodeAndName(normalizedPath);
+            if (newParentNode && newParentNode.type === 'folder' && newName) {
+                const existingNode = newParentNode.children[newName];
+                newParentNode.children[newName] = {
+                    type: 'file',
+                    name: newName,
+                    content: content,
+                    meta: {
+                        createdAt: existingNode?.meta.createdAt || Date.now(),
+                        modifiedAt: Date.now(),
+                        size: content.length
+                    }
+                };
+                newParentNode.meta.modifiedAt = Date.now();
+                this._saveFS();
+                return true;
+            }
+        } else if (parentNode.type === 'folder' && name) {
+            const existingNode = parentNode.children[name];
             parentNode.children[name] = {
                 type: 'file',
                 name: name,
@@ -113,11 +173,30 @@ export class FileSystem {
                     size: content.length
                 }
             };
-            parentNode.meta.modifiedAt = Date.now(); // Update parent folder's modified time
+            parentNode.meta.modifiedAt = Date.now();
             this._saveFS();
             return true;
         }
         return false;
+    }
+
+    // Método auxiliar para crear directorios recursivamente
+    _createDirectoriesRecursively(path) {
+        const normalizedPath = this._normalizePath(path);
+        if (normalizedPath === '/' || this.pathExists(normalizedPath)) {
+            return true; // Ya existe o es la raíz
+        }
+        
+        const parts = normalizedPath.split('/').filter(p => p);
+        let currentPath = '';
+        
+        for (const part of parts) {
+            currentPath += '/' + part;
+            if (!this.pathExists(currentPath)) {
+                this.createDirectory(currentPath, true);
+            }
+        }
+        return true;
     }
 
     createDirectory(path, silent = false) {

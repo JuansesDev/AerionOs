@@ -120,7 +120,7 @@ export class FileExplorerApp extends App {
                 return false;
             }
             if (!isNavigatingHistory) { // Evitar alertas en navegación por historial si la ruta ya no es válida
-                this.webOS.desktop.showAlertModal(`La ruta '${normalizedPath}' no es un directorio válido o no existe.`, 'Error de navegación', 'fa-exclamation-triangle');
+                this.webOS.modals.showAlert(`La ruta '${normalizedPath}' no es un directorio válido o no existe.`, 'Error de navegación', 'fa-exclamation-triangle');
             }
             if (this.pathBar) this.pathBar.value = this.currentPath;
             return false;
@@ -192,13 +192,7 @@ export class FileExplorerApp extends App {
             itemEl.dataset.type = item.type;
             itemEl.dataset.path = this._normalizePath(path === '/' ? `/${item.name}` : `${path}/${item.name}`);
 
-            let iconClass = 'fa-file';
-            if (item.type === 'folder') iconClass = 'fa-folder';
-            else if (item.name.endsWith('.txt')) iconClass = 'fa-file-alt';
-            else if (/\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(item.name)) iconClass = 'fa-file-image';
-            else if (/\.(mp3|wav|ogg|aac)$/i.test(item.name)) iconClass = 'fa-file-audio';
-            else if (/\.(mp4|webm|mov|avi)$/i.test(item.name)) iconClass = 'fa-file-video';
-            else if (/\.(zip|rar|tar|gz)$/i.test(item.name)) iconClass = 'fa-file-archive';
+            const iconClass = this._getFileIcon(item.name, item.type);
 
             itemEl.innerHTML = `
                 <i class="fas ${iconClass}"></i>
@@ -249,180 +243,71 @@ export class FileExplorerApp extends App {
         this.navigateTo(parentPath);
     }
 
-    _createNewFolder() {
-        this._showModal({
-            title: 'Nueva Carpeta',
-            icon: 'fa-folder-plus',
-            inputLabel: 'Nombre de la nueva carpeta:',
-            inputValue: 'Nueva Carpeta',
-            confirmButtonText: 'Crear',
-            validator: (value) => value && value.trim(),
-            onConfirm: (folderName) => {
+    async _createNewFolder() {
+        try {
+            const folderName = await this.webOS.modals.showPrompt(
+                'Nombre de la nueva carpeta:',
+                'Nueva Carpeta',
+                'Nueva Carpeta'
+            );
+            
+            if (folderName && folderName.trim()) {
                 const newPath = this._normalizePath(this.currentPath === '/' ? `/${folderName.trim()}` : `${this.currentPath}/${folderName.trim()}`);
                 if (this.webOS.fs.createDirectory(newPath)) {
                     this.navigateTo(this.currentPath, true);
                 } else {
-                    this.webOS.desktop.showAlertModal("Error al crear la carpeta. ¿Ya existe, el nombre es inválido o la ruta padre no existe?", "Error", "fa-exclamation-triangle");
+                    await this.webOS.modals.showAlert("Error al crear la carpeta. ¿Ya existe, el nombre es inválido o la ruta padre no existe?", "Error");
                 }
             }
-        });
+        } catch (error) {
+            console.log('Creación de carpeta cancelada');
+        }
     }
 
-    _createNewTextFile() {
-        this._showModal({
-            title: 'Nuevo Archivo de Texto',
-            icon: 'fa-file-medical',
-            inputLabel: 'Nombre del nuevo archivo:',
-            inputValue: 'nuevo_documento.txt',
-            confirmButtonText: 'Crear',
-            validator: (value) => {
-                value = value.trim();
-                return value && value.endsWith('.txt');
-            },
-            validationErrorMessage: "El nombre del archivo debe terminar en .txt",
-            onConfirm: (fileName) => {
-                const newPath = this._normalizePath(this.currentPath === '/' ? `/${fileName.trim()}` : `${this.currentPath}/${fileName.trim()}`);
+    async _createNewTextFile() {
+        try {
+            const fileName = await this.webOS.modals.showPrompt(
+                'Nombre del nuevo archivo:',
+                'Nuevo Archivo de Texto',
+                'nuevo_documento.txt'
+            );
+            
+            if (fileName && fileName.trim()) {
+                const trimmedName = fileName.trim();
+                if (!trimmedName.endsWith('.txt')) {
+                    await this.webOS.modals.showAlert("El nombre del archivo debe terminar en .txt", "Error");
+                    return;
+                }
+                
+                const newPath = this._normalizePath(this.currentPath === '/' ? `/${trimmedName}` : `${this.currentPath}/${trimmedName}`);
                 if (this.webOS.fs.writeFile(newPath, "")) {
                     this.navigateTo(this.currentPath, true);
                 } else {
-                    this.webOS.desktop.showAlertModal("Error al crear el archivo. ¿Ya existe o la ruta padre no existe?", "Error", "fa-exclamation-triangle");
+                    await this.webOS.modals.showAlert("Error al crear el archivo. ¿Ya existe o la ruta padre no existe?", "Error");
                 }
             }
-        });
+        } catch (error) {
+            console.log('Creación de archivo cancelada');
+        }
     }
 
-    _renameItem(path, oldName) {
-        this._showModal({
-            title: 'Renombrar',
-            icon: 'fa-edit',
-            inputLabel: `Nuevo nombre para "${oldName}":`,
-            inputValue: oldName,
-            confirmButtonText: 'Renombrar',
-            validator: (value) => value && value.trim() && value.trim() !== oldName,
-            validationErrorMessage: "El nuevo nombre debe ser diferente al actual",
-            onConfirm: (newName) => {
+    async _renameItem(path, oldName) {
+        try {
+            const newName = await this.webOS.modals.showPrompt(
+                `Nuevo nombre para "${oldName}":`,
+                'Renombrar',
+                oldName
+            );
+            
+            if (newName && newName.trim() && newName.trim() !== oldName) {
                 if (this.webOS.fs.rename(path, newName.trim())) {
                     this.navigateTo(this.currentPath, true);
                 } else {
-                    this.webOS.desktop.showAlertModal("Error al renombrar. Verifique que el nuevo nombre sea válido y no exista ya.", "Error", "fa-exclamation-triangle");
+                    await this.webOS.modals.showAlert("Error al renombrar. Verifique que el nuevo nombre sea válido y no exista ya.", "Error");
                 }
             }
-        });
-    }
-
-    _showModal(options) {
-        const overlay = document.createElement('div');
-        overlay.className = 'custom-modal-overlay';
-
-        const modal = document.createElement('div');
-        modal.className = 'custom-modal';
-
-        const header = document.createElement('div');
-        header.className = 'custom-modal-header';
-        header.innerHTML = `
-            <i class="fas ${options.icon || 'fa-question-circle'}"></i>
-            <h3>${options.title || 'Modal'}</h3>
-        `;
-
-        const body = document.createElement('div');
-        body.className = 'custom-modal-body';
-
-        const formGroup = document.createElement('div');
-        formGroup.className = 'form-group';
-
-        const label = document.createElement('label');
-        label.textContent = options.inputLabel || 'Ingrese un valor:';
-
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = options.inputValue || '';
-        input.autocomplete = 'off';
-
-        // Mensaje de error (inicialmente oculto)
-        const errorMessage = document.createElement('div');
-        errorMessage.style.color = 'var(--error-color)';
-        errorMessage.style.fontSize = '0.85em';
-        errorMessage.style.marginTop = '5px';
-        errorMessage.style.display = 'none';
-
-        formGroup.appendChild(label);
-        formGroup.appendChild(input);
-        formGroup.appendChild(errorMessage);
-        body.appendChild(formGroup);
-
-        const footer = document.createElement('div');
-        footer.className = 'custom-modal-footer';
-
-        const cancelButton = document.createElement('button');
-        cancelButton.className = 'cancel';
-        cancelButton.textContent = options.cancelButtonText || 'Cancelar';
-
-        const confirmButton = document.createElement('button');
-        confirmButton.className = 'confirm';
-        confirmButton.textContent = options.confirmButtonText || 'Aceptar';
-
-        footer.appendChild(cancelButton);
-        footer.appendChild(confirmButton);
-
-        modal.appendChild(header);
-        modal.appendChild(body);
-        modal.appendChild(footer);
-        overlay.appendChild(modal);
-
-        document.body.appendChild(overlay);
-
-        // Enfocar el input automáticamente y seleccionar todo el texto
-        setTimeout(() => {
-            input.focus();
-            input.select();
-        }, 100);
-
-        // Manejar el evento Enter para confirmar
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (validateAndConfirm()) {
-                    closeModal();
-                }
-            }
-        });
-
-        // Manejar el evento Escape para cerrar
-        document.addEventListener('keydown', handleEscape);
-        function handleEscape(e) {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                closeModal();
-            }
-        }
-
-        cancelButton.addEventListener('click', closeModal);
-        confirmButton.addEventListener('click', () => {
-            if (validateAndConfirm()) {
-                closeModal();
-            }
-        });
-
-        function validateAndConfirm() {
-            const value = input.value;
-
-            if (options.validator && !options.validator(value)) {
-                errorMessage.textContent = options.validationErrorMessage || 'Entrada inválida. Por favor, verifique.';
-                errorMessage.style.display = 'block';
-                input.focus();
-                return false;
-            }
-
-            if (options.onConfirm) {
-                options.onConfirm(value);
-            }
-
-            return true;
-        }
-
-        function closeModal() {
-            document.removeEventListener('keydown', handleEscape);
-            document.body.removeChild(overlay);
+        } catch (error) {
+            console.log('Renombrado cancelado');
         }
     }
 
@@ -509,26 +394,137 @@ export class FileExplorerApp extends App {
         if (name.endsWith('.txt')) {
             this.webOS.launchApp('notepad', { filePathToOpen: path });
         } else if (/\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(name)) {
-            this.webOS.desktop.showAlertModal(`Simulación: Abriendo imagen "${name}" (Visor de imágenes no implementado).`, "Visor de imágenes", "fa-image");
+            this.webOS.modals.showAlert(`Simulación: Abriendo imagen "${name}" (Visor de imágenes no implementado).`, "Visor de imágenes", "fa-image");
         } else {
-            this.webOS.desktop.showAlertModal(`No hay aplicación predeterminada para abrir el archivo "${name}".`, "Tipo de archivo no soportado", "fa-question-circle");
+            this.webOS.modals.showAlert(`No hay aplicación predeterminada para abrir el archivo "${name}".`, "Tipo de archivo no soportado", "fa-question-circle");
         }
     }
 
-    _deleteItem(path, name) {
-        this.webOS.desktop.showConfirmModal(
+    async _deleteItem(path, name) {
+        const shouldDelete = await this.webOS.modals.showConfirm(
             `¿Seguro que quieres eliminar "${name}"? Esta acción no se puede deshacer.`,
-            () => {
-                if (this.webOS.fs.delete(path)) {
-                    this.navigateTo(this.currentPath, true);
-                } else {
-                    this.webOS.desktop.showAlertModal("Error al eliminar el archivo/carpeta.", "Error", "fa-exclamation-triangle");
-                }
-            },
             "Confirmar eliminación",
-            "Eliminar",
-            "Cancelar",
             "fa-trash-alt"
         );
+        
+        if (shouldDelete) {
+            if (this.webOS.fs.delete(path)) {
+                this.navigateTo(this.currentPath, true);
+            } else {
+                this.webOS.modals.showAlert("Error al eliminar el archivo/carpeta.", "Error", "fa-exclamation-triangle");
+            }
+        }
+    }
+
+    // Función helper para obtener el icono apropiado basado en el tipo y nombre del archivo
+    _getFileIcon(fileName, fileType) {
+        if (fileType === 'folder' || fileType === 'directory') {
+            return 'fa-folder';
+        }
+        
+        // Obtener la extensión del archivo
+        const extension = fileName.toLowerCase().split('.').pop();
+        
+        // Iconos específicos por extensión
+        const iconMap = {
+            // Documentos de texto
+            'txt': 'fa-file-alt',
+            'md': 'fa-file-alt',
+            'rtf': 'fa-file-alt',
+            
+            // Documentos de oficina
+            'doc': 'fa-file-word',
+            'docx': 'fa-file-word',
+            'odt': 'fa-file-word',
+            'xls': 'fa-file-excel',
+            'xlsx': 'fa-file-excel',
+            'ods': 'fa-file-excel',
+            'ppt': 'fa-file-powerpoint',
+            'pptx': 'fa-file-powerpoint',
+            'odp': 'fa-file-powerpoint',
+            'pdf': 'fa-file-pdf',
+            
+            // Código fuente
+            'html': 'fa-file-code',
+            'htm': 'fa-file-code',
+            'css': 'fa-file-code',
+            'js': 'fa-file-code',
+            'jsx': 'fa-file-code',
+            'ts': 'fa-file-code',
+            'tsx': 'fa-file-code',
+            'json': 'fa-file-code',
+            'xml': 'fa-file-code',
+            'php': 'fa-file-code',
+            'py': 'fa-file-code',
+            'java': 'fa-file-code',
+            'cpp': 'fa-file-code',
+            'c': 'fa-file-code',
+            'h': 'fa-file-code',
+            'cs': 'fa-file-code',
+            'rb': 'fa-file-code',
+            'go': 'fa-file-code',
+            'rs': 'fa-file-code',
+            'sql': 'fa-file-code',
+            'sh': 'fa-file-code',
+            'bat': 'fa-file-code',
+            'cmd': 'fa-file-code',
+            'ps1': 'fa-file-code',
+            
+            // Imágenes
+            'jpg': 'fa-file-image',
+            'jpeg': 'fa-file-image',
+            'png': 'fa-file-image',
+            'gif': 'fa-file-image',
+            'bmp': 'fa-file-image',
+            'svg': 'fa-file-image',
+            'webp': 'fa-file-image',
+            'ico': 'fa-file-image',
+            'tiff': 'fa-file-image',
+            'tga': 'fa-file-image',
+            
+            // Audio
+            'mp3': 'fa-file-audio',
+            'wav': 'fa-file-audio',
+            'flac': 'fa-file-audio',
+            'aac': 'fa-file-audio',
+            'ogg': 'fa-file-audio',
+            'm4a': 'fa-file-audio',
+            'wma': 'fa-file-audio',
+            
+            // Video
+            'mp4': 'fa-file-video',
+            'avi': 'fa-file-video',
+            'mkv': 'fa-file-video',
+            'mov': 'fa-file-video',
+            'wmv': 'fa-file-video',
+            'flv': 'fa-file-video',
+            'webm': 'fa-file-video',
+            'm4v': 'fa-file-video',
+            '3gp': 'fa-file-video',
+            
+            // Archivos comprimidos
+            'zip': 'fa-file-archive',
+            'rar': 'fa-file-archive',
+            '7z': 'fa-file-archive',
+            'tar': 'fa-file-archive',
+            'gz': 'fa-file-archive',
+            'bz2': 'fa-file-archive',
+            'xz': 'fa-file-archive',
+            
+            // Archivos de configuración
+            'ini': 'fa-cog',
+            'cfg': 'fa-cog',
+            'conf': 'fa-cog',
+            'config': 'fa-cog',
+            'properties': 'fa-cog',
+            'env': 'fa-cog',
+            
+            // Archivos especiales
+            'log': 'fa-list-alt',
+            'csv': 'fa-table',
+            'tsv': 'fa-table',
+        };
+        
+        return iconMap[extension] || 'fa-file';
     }
 }

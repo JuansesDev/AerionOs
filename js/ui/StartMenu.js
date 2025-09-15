@@ -67,10 +67,15 @@ export class StartMenu {
         });
 
 
-        this.element.querySelector('.power-button').addEventListener('click', () => {
-            if (confirm("¿Seguro que quieres cerrar sesión?")) {
-                this.webOS.userSession.logout();
-                this.hide();
+        this.element.querySelector('.power-button').addEventListener('click', async () => {
+            try {
+                const shouldLogout = await this.webOS.modals.showConfirm("¿Seguro que quieres cerrar sesión?", "Cerrar Sesión");
+                if (shouldLogout) {
+                    this.webOS.userSession.logout();
+                    this.hide();
+                }
+            } catch (error) {
+                console.log('Cierre de sesión cancelado');
             }
         });
 
@@ -81,8 +86,8 @@ export class StartMenu {
 
         const userButton = this.element.querySelector('.user-button');
         if (userButton) {
-            userButton.addEventListener('click', () => {
-                alert(`Usuario: ${this.webOS.userSession.getCurrentUsername()}\n(Funcionalidad de perfil de usuario próximamente)`);
+            userButton.addEventListener('click', async () => {
+                await this.webOS.modals.showAlert(`Usuario: ${this.webOS.userSession.getCurrentUsername()}\n(Funcionalidad de perfil de usuario próximamente)`, "Información del Usuario");
                 this.hide();
             });
         }

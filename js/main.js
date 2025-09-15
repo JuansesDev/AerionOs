@@ -3,6 +3,7 @@ import { UserSession } from './core/UserSession.js';
 import { FileSystem } from './core/FileSystem.js';
 import { WindowManager } from './core/WindowManager.js';
 import { ContextMenu } from './core/ContextMenu.js';
+import { ModalSystem } from './core/ModalSystem.js';
 import { Window as AuraWindow } from './core/Window.js'; // Renombrar para evitar conflicto con window global
 
 import { AuthScreen } from './ui/AuthScreen.js';
@@ -41,6 +42,7 @@ class WebOS {
         this.fs = null;
         this.windowManager = new WindowManager(this);
         this.contextMenu = new ContextMenu(this);
+        this.modals = new ModalSystem(this);
 
         this.desktop = null;
         this.taskbar = null;
@@ -54,7 +56,8 @@ class WebOS {
         if (this.userSession.isAuthenticated()) {
             this._onLogin(this.userSession.currentUser);
         } else {
-            this.authScreen.show();
+            // Auto-login con usuario por defecto
+            this._autoLoginDefaultUser();
         }
     }
 
@@ -151,6 +154,31 @@ class WebOS {
             console.error(`AuraOS Error: Application '${appId}' not found.`);
             alert(`Error: Aplicación "${appId}" no encontrada.`);
             return null;
+        }
+    }
+
+    // Método para hacer auto-login con un usuario por defecto
+    _autoLoginDefaultUser() {
+        const defaultUsername = 'AuraOsUser';
+        
+        // Verificar si el usuario ya existe, si no, crearlo
+        const users = JSON.parse(localStorage.getItem('auraOS_users') || '{}');
+        if (!users[defaultUsername]) {
+            // Crear el usuario por defecto
+            const result = this.userSession.register(defaultUsername);
+            if (result.success) {
+                console.log('Usuario por defecto creado y logeado automáticamente');
+            } else {
+                console.error('Error al crear usuario por defecto:', result.message);
+            }
+        } else {
+            // El usuario ya existe, hacer login
+            const success = this.userSession.login(defaultUsername);
+            if (success) {
+                console.log('Login automático con usuario por defecto exitoso');
+            } else {
+                console.error('Error en login automático');
+            }
         }
     }
 }

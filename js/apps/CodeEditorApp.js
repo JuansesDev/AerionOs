@@ -88,9 +88,9 @@ export class CodeEditorApp extends App {
             tab-size: 2;
         `;
 
-        contentElement.querySelector('.codeeditor-toolbar').addEventListener('click', (e) => {
+        contentElement.querySelector('.codeeditor-toolbar').addEventListener('click', async (e) => {
             const button = e.target.closest('button[data-action]');
-            if (button) this._handleToolbarAction(button.dataset.action);
+            if (button) await this._handleToolbarAction(button.dataset.action);
         });
 
         // Manejar eventos del textarea
@@ -187,24 +187,42 @@ export class CodeEditorApp extends App {
         }
     }
 
-    _handleToolbarAction(action) {
+    async _handleToolbarAction(action) {
         switch(action) {
-            case 'new':
-                if (this.isDirty) { if (!confirm("Hay cambios sin guardar. ¿Descartarlos y crear nuevo?")) return; }
-                this._newFile(); break;
-            case 'open':
-                if (this.isDirty) { if (!confirm("Hay cambios sin guardar. ¿Descartarlos y abrir otro?")) return; }
-                this._openFilePrompt(); break;
+            case 'new': 
+                if (this.isDirty) { 
+                    const shouldDiscard = await this.webOS.modals.showConfirm(
+                        "Hay cambios sin guardar. ¿Descartarlos y crear nuevo?", 
+                        'Cambios sin guardar', 
+                        'fa-exclamation-triangle'
+                    );
+                    if (!shouldDiscard) return; 
+                }
+                this._newFile(); 
+                break;
+            case 'open': 
+                if (this.isDirty) { 
+                    const shouldDiscard = await this.webOS.modals.showConfirm(
+                        "Hay cambios sin guardar. ¿Descartarlos y abrir otro?", 
+                        'Cambios sin guardar', 
+                        'fa-exclamation-triangle'
+                    );
+                    if (!shouldDiscard) return; 
+                }
+                await this._openFilePrompt(); 
+                break;
             case 'save': this._saveFile(); break;
-            case 'save-as': this._saveFileAs(); break;
+            case 'save-as': await this._saveFileAs(); break;
             case 'run-html': this._runHtmlPreview(); break;
         }
-    }
-
-    _handleBeforeClose() {
+    }    async _handleBeforeClose() {
         if (this.isDirty) {
-            const confirmation = confirm("Tienes cambios sin guardar. ¿Guardarlos antes de cerrar?");
-            if (confirmation) {
+            const shouldSave = await this.webOS.modals.showConfirm(
+                "Tienes cambios sin guardar. ¿Guardarlos antes de cerrar?", 
+                'Cambios sin guardar', 
+                'fa-exclamation-triangle'
+            );
+            if (shouldSave) {
                 const saved = this._saveFile();
                 // Si el guardado falla o es cancelado, idealmente no se cierra.
                 // Esto es complicado sin que el evento 'beforeClose' pueda ser cancelado.
@@ -272,19 +290,27 @@ export class CodeEditorApp extends App {
             this._updateCodeHighlighting();
             this._updateCursorPosition();
         } else {
-            alert(`Error: No se pudo abrir el archivo "${path}".`);
+            this.webOS.modals.showAlert(`Error: No se pudo abrir el archivo "${path}".`, 'Error al abrir archivo', 'fa-exclamation-triangle');
             this._newFile();
         }
     }
 
-    _openFilePrompt() {
+    async _openFilePrompt() {
         const defaultPath = this.currentFilePath ?
             this.currentFilePath.substring(0, this.currentFilePath.lastIndexOf('/') + 1) :
             "/Documents/"; // O quizás "/" para más flexibilidad
-        const path = prompt("Ingresa la ruta completa del archivo a abrir:", defaultPath);
+        
+        try {
+            const path = await this.webOS.modals.showFileOpenDialog(
+                defaultPath,
+                ['.txt', '.html', '.css', '.js', '.json', '.md', '.xml']
+            );
 
-        if (path && path.trim()) {
-            this._loadFile(path.trim());
+            if (path) {
+                this._loadFile(path);
+            }
+        } catch (error) {
+            console.log('Apertura de archivo cancelada');
         }
     }
 
@@ -300,12 +326,12 @@ export class CodeEditorApp extends App {
             this._updateWindowTitleAndStatus();
             return true;
         } else {
-            alert("Error al guardar el archivo.");
+            this.webOS.modals.showAlert("Error al guardar el archivo.", 'Error de guardado', 'fa-exclamation-triangle');
             return false;
         }
     }
 
-    _saveFileAs() { // Devuelve true si se guardó, false si se canceló o falló
+    async _saveFileAs() { // Devuelve true si se guardó, false si se canceló o falló
         let defaultDir = "/Documents/";
         let defaultName = "nuevo_archivo.txt"; // Extensión por defecto
 
@@ -314,32 +340,39 @@ export class CodeEditorApp extends App {
             defaultName = this.currentFilePath.substring(this.currentFilePath.lastIndexOf('/') + 1);
         }
 
-        const newPath = prompt("Guardar como (ruta completa y nombre de archivo):", defaultDir + defaultName);
+        // Usar el modal del explorador de archivos
+        const newPath = await this.webOS.modals.showFileSaveDialog(
+            defaultDir, 
+            defaultName, 
+            ['.txt', '.html', '.css', '.js', '.json', '.md', '.xml', '.csv']
+        );
 
-        if (!newPath || !newPath.trim()) return false;
+        if (!newPath) return false; // Usuario canceló
 
-        const trimmedPath = this.webOS.fs._normalizePath(newPath.trim()); // Normalizar la ruta
-
-        if (this.webOS.fs.pathExists(trimmedPath)) {
-            if (!confirm(`El archivo "${trimmedPath}" ya existe. ¿Deseas sobrescribirlo?`)) {
-                return false;
-            }
+        // Verificar si el archivo ya existe y pedir confirmación
+        if (this.webOS.fs.pathExists(newPath)) {
+            const shouldOverwrite = await this.webOS.modals.showConfirm(
+                `El archivo "${newPath}" ya existe. ¿Deseas sobrescribirlo?`, 
+                'Archivo existe', 
+                'fa-exclamation-triangle'
+            );
+            if (!shouldOverwrite) return false;
         }
 
-        const success = this.webOS.fs.writeFile(trimmedPath, this.textarea.value);
+        const success = this.webOS.fs.writeFile(newPath, this.textarea.value);
         if (success) {
-            this.currentFilePath = trimmedPath;
+            this.currentFilePath = newPath;
             this.originalContent = this.textarea.value;
             this.isDirty = false;
 
             // Actualizar el lenguaje al guardar con una nueva extensión
-            this.currentLanguage = this._detectLanguage(trimmedPath);
+            this.currentLanguage = this._detectLanguage(newPath);
 
             this._updateWindowTitleAndStatus();
             this._updateCodeHighlighting();
             return true;
         } else {
-            alert("Error al guardar el archivo como.");
+            this.webOS.modals.showAlert("Error al guardar el archivo como.", 'Error de guardado', 'fa-exclamation-triangle');
             return false;
         }
     }
@@ -347,7 +380,7 @@ export class CodeEditorApp extends App {
     _runHtmlPreview() {
         const htmlContent = this.textarea.value;
         if (!htmlContent.trim()) {
-            alert("No hay contenido HTML para ejecutar.");
+            this.webOS.modals.showAlert("No hay contenido HTML para ejecutar.", 'Sin contenido', 'fa-info-circle');
             return;
         }
 
@@ -388,11 +421,16 @@ export class CodeEditorApp extends App {
         return html.replace(/"/g, '&quot;');
     }
 
-    onRelaunch(windowInstance, launchOptions) {
+    async onRelaunch(windowInstance, launchOptions) {
         super.onRelaunch(windowInstance, launchOptions);
         if (launchOptions && launchOptions.filePathToOpen) {
             if (this.isDirty) {
-                if (!confirm("Tienes cambios sin guardar. ¿Descartar y abrir el nuevo archivo en esta ventana?")) {
+                const shouldDiscard = await this.webOS.modals.showConfirm(
+                    "Tienes cambios sin guardar. ¿Descartar y abrir el nuevo archivo en esta ventana?", 
+                    'Cambios sin guardar', 
+                    'fa-exclamation-triangle'
+                );
+                if (!shouldDiscard) {
                     return;
                 }
             }

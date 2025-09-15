@@ -22,6 +22,11 @@ export class DrawingApp extends App {
         this.lineWidth = 5;
         this._resizeFrame = null;
         this._windowResizeHandler = null;
+        
+        // Resolución base fija del canvas (independiente del tamaño de la ventana)
+        this.BASE_CANVAS_WIDTH = 1200;
+        this.BASE_CANVAS_HEIGHT = 900;
+        
         // Bind de métodos una sola vez en el constructor
         this._boundStartDrawing = this._startDrawing.bind(this);
         this._boundDraw = this._draw.bind(this);
@@ -144,35 +149,41 @@ export class DrawingApp extends App {
     }
 
     /**
-     * Maneja el redimensionamiento del canvas
+     * Maneja el redimensionamiento del canvas manteniendo resolución fija
      */
     _handleResize() {
         if (!this.canvas || !this.canvas.parentElement) return;
         
         const container = this.canvas.parentElement;
         const rect = container.getBoundingClientRect();
-        const pixelRatio = window.devicePixelRatio || 1;
         
-        // Guardar contenido actual
-        const currentContent = this._saveCanvasContent();
+        // El canvas mantiene su resolución base fija
+        // Solo se ajusta el tamaño CSS para que se adapte al contenedor
+        const containerWidth = rect.width;
+        const containerHeight = rect.height;
         
-        // Establecer nuevo tamaño
-        this.canvas.width = Math.floor(rect.width * pixelRatio);
-        this.canvas.height = Math.floor(rect.height * pixelRatio);
+        // Calcular escala para mantener proporción sin distorsionar
+        const scaleX = containerWidth / this.BASE_CANVAS_WIDTH;
+        const scaleY = containerHeight / this.BASE_CANVAS_HEIGHT;
+        const scale = Math.min(scaleX, scaleY);
         
-        // Ajustar tamaño CSS
-        this.canvas.style.width = `${rect.width}px`;
-        this.canvas.style.height = `${rect.height}px`;
+        // Calcular dimensiones escaladas
+        const scaledWidth = this.BASE_CANVAS_WIDTH * scale;
+        const scaledHeight = this.BASE_CANVAS_HEIGHT * scale;
         
-        // Configurar contexto
-        const ctx = this.canvas.getContext('2d', { willReadFrequently: true });
-        ctx.scale(pixelRatio, pixelRatio);
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        // Centrar el canvas en el contenedor
+        const offsetX = (containerWidth - scaledWidth) / 2;
+        const offsetY = (containerHeight - scaledHeight) / 2;
         
-        // Restaurar contenido
-        this._restoreCanvasContent(currentContent, rect.width, rect.height);
-        this._updateContextStyle();
+        // Aplicar el tamaño CSS (visual) sin cambiar la resolución interna
+        this.canvas.style.width = `${scaledWidth}px`;
+        this.canvas.style.height = `${scaledHeight}px`;
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.left = `${offsetX}px`;
+        this.canvas.style.top = `${offsetY}px`;
+        
+        // Mantener suavizado para una mejor visualización escalada
+        this.canvas.style.imageRendering = 'auto';
     };
 
     async _initCanvas() {
@@ -191,15 +202,20 @@ export class DrawingApp extends App {
             throw new Error('No se pudo encontrar el elemento canvas');
         }
         
+        // Configurar resolución base fija del canvas
+        this.canvas.width = this.BASE_CANVAS_WIDTH;
+        this.canvas.height = this.BASE_CANVAS_HEIGHT;
+        
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
         
         if (!container) {
             throw new Error('No se pudo encontrar el contenedor del canvas');
         }
         
-        // Configurar estilos iniciales
+        // Configurar estilos iniciales del contenedor
         container.style.height = 'calc(100% - 50px)';
         container.style.position = 'relative';
+        container.style.overflow = 'hidden';
         
         // Función para manejar el redimensionamiento
         const handleResize = () => {
@@ -210,6 +226,9 @@ export class DrawingApp extends App {
         // Configurar redimensionamiento inicial
         this._handleResize();
         
+        // Configurar fondo blanco inicial
+        this._initializeCanvasBackground();
+        
         // Configurar observador de redimensionamiento
         if (typeof ResizeObserver === 'function') {
             this._resizeObserver = new ResizeObserver(handleResize);
@@ -219,6 +238,17 @@ export class DrawingApp extends App {
             window.addEventListener('resize', handleResize);
             this._windowResizeHandler = handleResize;
         }
+    }
+
+    /**
+     * Inicializa el fondo del canvas con color blanco
+     */
+    _initializeCanvasBackground() {
+        if (!this.ctx || !this.canvas) return;
+        
+        this.ctx.fillStyle = 'white';
+        this.ctx.fillRect(0, 0, this.BASE_CANVAS_WIDTH, this.BASE_CANVAS_HEIGHT);
+        this._updateContextStyle();
     }
 
     _setupEventListeners() {
@@ -452,6 +482,8 @@ export class DrawingApp extends App {
         this.ctx.lineWidth = this.lineWidth;
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
+        
+        // Configuración optimizada para calidad de dibujo
         this.ctx.imageSmoothingEnabled = true;
         this.ctx.imageSmoothingQuality = 'high';
     }

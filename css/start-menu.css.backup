@@ -3,9 +3,9 @@
     position: fixed;
     bottom: var(--taskbar-height);
     left: 0;
-    width: 480px; /* Reducido de 520px a 480px */
-    height: 500px !important; /* Altura fija forzada */
-    max-height: 500px !important; /* Altura máxima fija forzada */
+    width: 520px;
+    height: 70vh; /* Usar porcentaje de altura de la ventana para mejor responsividad */
+    max-height: 600px; /* Altura máxima para pantallas grandes */
     min-height: 400px; /* Altura mínima para pantallas pequeñas */
     background-color: #1a1b26;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -36,9 +36,6 @@
     display: flex;
     flex: 1;
     overflow: hidden;
-    min-height: 0; /* Importante: permite que flex children se contraigan */
-    height: 455px !important; /* Altura forzada: 500px - 45px del footer */
-    max-height: 455px !important; /* Máximo forzado */
 }
 
 /* Barra de búsqueda mejorada */
@@ -49,23 +46,6 @@
     position: relative;
     display: flex;
     align-items: center;
-}
-
-/* Búsqueda con contenedor estilo style.css */
-.search-container {
-    display: flex;
-    align-items: center;
-    background-color: var(--primary-bg);
-    border-radius: 20px;
-    padding: 0 12px;
-    flex: 1;
-    margin-right: 15px;
-    border: 1px solid var(--border-color-light);
-    transition: border-color 0.2s;
-}
-
-.search-container:focus-within {
-    border-color: var(--accent-color);
 }
 
 .search-icon {
@@ -80,28 +60,19 @@
     font-size: 13px;
     width: 100%;
     outline: none;
-    padding: 7px 0;
 }
 
 .search-input::placeholder {
     color: rgba(255, 255, 255, 0.5);
 }
 
-.search-input:focus {
-    outline: none;
-}
-
 /* Lista de categorías (columna izquierda) */
 .start-menu-categories {
-    width: 180px; /* Reducido de 200px a 180px para dar más espacio */
+    width: 200px;
     background-color: #232433;
     overflow-y: auto;
     padding: 10px 0;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
-    /* Forzar tamaño fijo igual */
-    min-height: 455px !important; /* Mismo que el contenedor padre */
-    max-height: 455px !important; /* Mismo que el contenedor padre */
-    height: 455px !important; /* Forzar altura exacta */
     /* Mejorar el scrollbar */
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
@@ -127,13 +98,10 @@
 .category-item {
     display: flex;
     align-items: center;
-    padding: 12px 15px; /* Aumentado de 10px a 12px */
+    padding: 10px 15px;
     color: #d8d8d8;
     cursor: pointer;
     transition: background-color 0.15s;
-    gap: 12px;
-    position: relative;
-    font-size: 0.95em;
 }
 
 .category-item:hover {
@@ -145,56 +113,27 @@
     color: #fff;
 }
 
-.category-item.active::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 3px;
-    background-color: var(--accent-color-hover);
+.category-item i {
+    width: 24px;
+    margin-right: 12px;
+    text-align: center;
+    font-size: 16px;
+    color: #0984e3;
 }
 
 .category-item span {
     font-size: 14px;
 }
 
-.category-item i {
-    width: 22px; /* Aumentado de 24px a 22px para mejor proporción */
-    margin-right: 10px; /* Reducido de 12px a 10px */
-    text-align: center;
-    font-size: 16px;
-    color: #0984e3;
-}
-
 /* Sección de aplicaciones (columna derecha) */
 .start-menu-apps {
     flex: 1;
     background-color: #1a1b26;
-    overflow-y: auto !important; /* Forzar scroll vertical */
-    overflow-x: hidden; /* Evitar scroll horizontal */
+    overflow-y: auto;
     padding: 15px;
-    /* Forzar tamaño fijo igual */
-    min-height: 455px !important; /* Mismo que el contenedor padre */
-    max-height: 455px !important; /* Mismo que el contenedor padre */
-    height: 455px !important; /* Forzar altura exacta */
     /* Mejorar el scrollbar */
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-}
-
-/* Asegurar que los items de app no causen overflow */
-.app-item {
-    display: flex;
-    align-items: center;
-    padding: 10px 15px; /* Aumentado de 8px a 10px */
-    cursor: pointer;
-    color: #d8d8d8;
-    border-radius: 4px;
-    transition: background-color 0.15s;
-    flex-shrink: 0; /* Evitar que se contraigan */
-    box-sizing: border-box; /* Incluir padding en el cálculo de tamaño */
-    margin-bottom: 2px; /* Añadir un pequeño margen entre elementos */
 }
 
 .start-menu-apps::-webkit-scrollbar {
@@ -214,13 +153,23 @@
     background-color: rgba(255, 255, 255, 0.5);
 }
 
+.app-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    cursor: pointer;
+    color: #d8d8d8;
+    border-radius: 4px;
+    transition: background-color 0.15s;
+}
+
 .app-item:hover {
     background-color: rgba(255, 255, 255, 0.08);
 }
 
 .app-item i {
     margin-right: 12px;
-    width: 22px; /* Consistente con categorías */
+    width: 20px;
     text-align: center;
     font-size: 16px;
     color: #fff;
@@ -309,7 +258,7 @@
 /* Responsive para pantallas pequeñas */
 @media (max-width: 650px) {
     #start-menu {
-        width: 420px; /* Ajustado proporcionalmente */
+        width: 450px;
     }
 
     .pinned-apps-grid {
@@ -323,11 +272,11 @@
 
 @media (max-width: 500px) {
     #start-menu {
-        width: 300px; /* Ajustado proporcionalmente */
+        width: 320px;
     }
 
     .start-menu-categories {
-        width: 120px; /* Ajustado proporcionalmente */
+        width: 140px;
     }
 }
 
@@ -338,7 +287,7 @@
 }
 
 .app-item .app-name {
-    font-size: 14px; /* Aumentado de 13px a 14px */
+    font-size: 13px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -457,9 +406,7 @@
 /* Responsive para pantallas pequeñas */
 @media (max-width: 650px) {
     #start-menu {
-        width: 420px; /* Ajustado proporcionalmente */
-        height: 65vh;
-        max-height: 500px;
+        width: 450px;
     }
 
     .pinned-apps-grid {
@@ -473,20 +420,10 @@
 
 @media (max-width: 500px) {
     #start-menu {
-        width: 90vw;
-        max-width: 360px; /* Ajustado proporcionalmente */
-        height: 60vh;
-        max-height: 450px;
+        width: 320px;
     }
 
     .start-menu-categories {
-        width: 120px; /* Ajustado proporcionalmente */
-    }
-}
-
-@media (max-height: 600px) {
-    #start-menu {
-        height: 80vh;
-        max-height: 480px;
+        width: 140px;
     }
 }

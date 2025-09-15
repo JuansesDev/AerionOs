@@ -85,18 +85,23 @@ export class SettingsApp extends App {
 
         const wallpaperInput = contentElement.querySelector('#wallpaper-url-input');
 
-        contentElement.querySelector('[data-action="logout"]').addEventListener('click', () => {
-            if (confirm("¿Estás seguro de que quieres cerrar sesión?")) {
-                this.webOS.userSession.logout();
-                // No es necesario cerrar la ventana aquí, _onLogout en WebOS se encargará
+        contentElement.querySelector('[data-action="logout"]').addEventListener('click', async () => {
+            try {
+                const shouldLogout = await this.webOS.modals.showConfirm("¿Estás seguro de que quieres cerrar sesión?", "Cerrar Sesión");
+                if (shouldLogout) {
+                    this.webOS.userSession.logout();
+                    // No es necesario cerrar la ventana aquí, _onLogout en WebOS se encargará
+                }
+            } catch (error) {
+                console.log('Cierre de sesión cancelado');
             }
         });
-        contentElement.querySelector('[data-action="apply-wallpaper"]').addEventListener('click', () => {
+        contentElement.querySelector('[data-action="apply-wallpaper"]').addEventListener('click', async () => {
             const url = wallpaperInput.value.trim();
             if (url) {
                 this.webOS.desktop.setWallpaper(url); // Esto también guarda en userSession
             } else {
-                alert("Por favor, ingresa una URL para el fondo de escritorio.");
+                await this.webOS.modals.showAlert("Por favor, ingresa una URL para el fondo de escritorio.", "Error");
             }
         });
         contentElement.querySelector('[data-action="reset-wallpaper"]').addEventListener('click', () => {
