@@ -18,6 +18,8 @@ export class DoomApp extends App {
             allowMultipleInstances: false
         });
         this.dosInstance = null;
+        this.originalTitle = document.title; // Guardar el título original
+        this.titleObserver = null; // Observer para cambios en el título
     }
 
     renderContent(contentElement, windowInstance) {
@@ -88,6 +90,9 @@ export class DoomApp extends App {
             // Usar js-dos 6.22 API
             this.dosInstance = DosFunction(canvas);
             
+            // Proteger el título de la página antes de inicializar DOSBox
+            this.protectPageTitle();
+            
             // Esperar a que esté listo
             this.dosInstance.ready((fs, main) => {
                 this.updateProgress(progressBar, loadingDetails, 60, 'Cargando bundle de DOOM...');
@@ -148,6 +153,9 @@ export class DoomApp extends App {
 
     showDoomDemo(canvas, loadingEl, containerEl, progressBar, loadingDetails, windowInstance) {
         console.log('Mostrando demo de DOOM debido a problemas con js-dos');
+        
+        // Proteger el título también en el modo demo
+        this.protectPageTitle();
         
         this.updateProgress(progressBar, loadingDetails, 80, 'Iniciando demo de DOOM...');
         
@@ -347,8 +355,56 @@ export class DoomApp extends App {
         container.offsetHeight;
     }
 
+    protectPageTitle() {
+        // Crear un observer que vigile cambios en el título y lo restaure
+        this.titleObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.target === document.head) {
+                    // Verificar si el título cambió
+                    if (document.title !== this.originalTitle) {
+                        console.log('Título cambiado por DOSBox, restaurando...', document.title, '->', this.originalTitle);
+                        document.title = this.originalTitle;
+                    }
+                }
+            });
+        });
+
+        // Observar cambios en el head (donde está el title)
+        this.titleObserver.observe(document.head, {
+            childList: true,
+            subtree: true
+        });
+
+        // También usar un intervalo como backup para asegurar que el título se mantenga
+        this.titleInterval = setInterval(() => {
+            if (document.title !== this.originalTitle) {
+                document.title = this.originalTitle;
+            }
+        }, 100); // Verificar cada 100ms
+    }
+
+    stopTitleProtection() {
+        // Detener el observer
+        if (this.titleObserver) {
+            this.titleObserver.disconnect();
+            this.titleObserver = null;
+        }
+
+        // Detener el intervalo
+        if (this.titleInterval) {
+            clearInterval(this.titleInterval);
+            this.titleInterval = null;
+        }
+
+        // Restaurar el título una vez más por si acaso
+        document.title = this.originalTitle;
+    }
+
     cleanup() {
         console.log("Cleaning up DOOM instance...");
+        
+        // Detener la protección del título
+        this.stopTitleProtection();
         
         // Limpiar el observer del canvas
         if (this.canvasObserver) {
