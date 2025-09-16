@@ -356,7 +356,7 @@ export class Desktop {
                             <h3 style="margin-bottom: 15px; color: var(--accent-color); text-align: center; font-size: 1.6em; font-weight: 500;">
                                 <i class="fab fa-linux" style="margin-right: 8px;"></i>AuraOS
                             </h3>
-                            <p style="text-align: center; font-size: 0.95em; margin-bottom: 10px;">Versión 0.5 (Portfolio Edition)</p>
+                            <p style="text-align: center; font-size: 0.95em; margin-bottom: 10px;">Versión 0.5 (Community Edition)</p>
                             <p style="text-align: center; margin-bottom: 15px;">
                                 Desarrollado por: <strong style="color: var(--accent-color-hover);">JuansesDev</strong>
                             </p>

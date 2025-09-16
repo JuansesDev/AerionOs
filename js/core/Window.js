@@ -161,19 +161,58 @@ export class Window extends EventEmittable {
             newTop = this.startTop + dy;
         }
 
-        // Respetar mínimos y ajustar posición solo si no se alcanzó el mínimo
+        // Mantener relación de aspecto si está configurado (para DOOM)
+        if (this.options.maintainAspectRatio && this.options.aspectRatio) {
+            const aspectRatio = this.options.aspectRatio;
+            
+            // Determinar qué dimensión usar como base
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // Usar ancho como base
+                newHeight = newWidth / aspectRatio;
+            } else {
+                // Usar altura como base
+                newWidth = newHeight * aspectRatio;
+            }
+
+            // Ajustar posición para redimensionamiento desde esquinas
+            if (this.resizingBorder.includes('left')) {
+                newLeft = this.startLeft + (this.startWidth - newWidth);
+            }
+            if (this.resizingBorder.includes('top')) {
+                newTop = this.startTop + (this.startHeight - newHeight);
+            }
+        }
+
+        // Respetar mínimos y máximos
         let minWidth = this.options.minWidth;
         let minHeight = this.options.minHeight;
+        let maxWidth = this.options.maxWidth || Infinity;
+        let maxHeight = this.options.maxHeight || Infinity;
 
-        // Si el nuevo ancho es menor que el mínimo, no mover el left
+        // Aplicar límites
         if (newWidth < minWidth) {
-            newLeft = this.startLeft + (this.startWidth - minWidth);
             newWidth = minWidth;
+            if (this.options.maintainAspectRatio && this.options.aspectRatio) {
+                newHeight = newWidth / this.options.aspectRatio;
+            }
         }
-        // Si el nuevo alto es menor que el mínimo, no mover el top
         if (newHeight < minHeight) {
-            newTop = this.startTop + (this.startHeight - minHeight);
             newHeight = minHeight;
+            if (this.options.maintainAspectRatio && this.options.aspectRatio) {
+                newWidth = newHeight * this.options.aspectRatio;
+            }
+        }
+        if (newWidth > maxWidth) {
+            newWidth = maxWidth;
+            if (this.options.maintainAspectRatio && this.options.aspectRatio) {
+                newHeight = newWidth / this.options.aspectRatio;
+            }
+        }
+        if (newHeight > maxHeight) {
+            newHeight = maxHeight;
+            if (this.options.maintainAspectRatio && this.options.aspectRatio) {
+                newWidth = newHeight * this.options.aspectRatio;
+            }
         }
 
         // Aplicar cambios

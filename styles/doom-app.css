@@ -1,0 +1,142 @@
+/* styles/doom-app.css */
+.window.doom-app .window-content {
+    padding: 0;
+    overflow: hidden;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+}
+
+.doom-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    position: relative;
+}
+
+.doom-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: fill; /* Llenar completamente el espacio */
+    background: #000;
+    border: none;
+    display: block;
+    image-rendering: pixelated !important;
+    image-rendering: -moz-crisp-edges !important;
+    image-rendering: crisp-edges !important;
+    /* Forzar escalado nítido para juegos retro */
+    image-rendering: -webkit-optimize-contrast !important;
+    -ms-interpolation-mode: nearest-neighbor !important;
+}
+
+/* Asegurar que no hay scroll en la ventana de DOOM */
+.window.doom-app {
+    overflow: hidden;
+}
+
+.window.doom-app .window-content {
+    overflow: hidden;
+}
+
+/* Estilos para la pantalla de carga */
+.doom-loading {
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-text {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ff6666;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.loading-progress {
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(255,0,0,0.3);
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #ff0000, #ff6666);
+    box-shadow: 0 0 10px rgba(255,0,0,0.5);
+}
+
+.loading-details {
+    color: #cccccc;
+    font-size: 14px;
+}
+
+/* Forzar escalado en todos los canvas dentro de la app DOOM */
+.doom-app canvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    object-fit: fill !important;
+    image-rendering: pixelated !important;
+    image-rendering: -moz-crisp-edges !important;
+    image-rendering: crisp-edges !important;
+    image-rendering: -webkit-optimize-contrast !important;
+    -ms-interpolation-mode: nearest-neighbor !important;
+    transform: scale(1) !important;
+    display: block !important;
+}
+
+/* Asegurar que js-dos no limite el tamaño */
+.doom-app .dos-container {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.doom-app .dos-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: fill !important;
+}
+
+/* Override específico para el canvas principal */
+.doom-app #js-dos-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: fill !important;
+}
+
+/* Ocultar cursor del mouse en el área de juego cuando está activo */
+.doom-container:hover canvas {
+    cursor: none;
+}
+
+/* Estilos para js-dos UI */
+.doom-app .dos-ui {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background: rgba(0,0,0,0.8);
+}
+
+/* Asegurar que el canvas llene completamente el contenedor */
+.doom-app .dos-container {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.doom-app .dos-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: fill !important;
+}

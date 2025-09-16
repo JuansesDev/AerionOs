@@ -73,7 +73,7 @@ export class SettingsApp extends App {
                 </div>
                 <div class="settings-category">
                     <h3><i class="fas fa-info-circle"></i> Acerca de AuraOS</h3>
-                    <p><strong>AuraOS - Portfolio Edition</strong> v0.4</p>
+                    <p><strong>AuraOS - Community Edition</strong> v0.4</p>
                     <p>Un simulador de sistema operativo web creado con HTML, CSS y JavaScript modular.</p>
                     <p>© ${new Date().getFullYear()} JuansesDev</p>
                     <div class="setting-item">
@@ -173,7 +173,7 @@ export class SettingsApp extends App {
                         <h3 style="margin-bottom: 15px; color: var(--accent-color); text-align: center; font-size: 1.6em; font-weight: 500;">
                             <i class="fab fa-linux" style="margin-right: 8px;"></i>AuraOS
                         </h3>
-                        <p style="text-align: center; font-size: 0.95em; margin-bottom: 10px;">Versión 0.5 (Portfolio Edition)</p>
+                        <p style="text-align: center; font-size: 0.95em; margin-bottom: 10px;">Versión 0.5 (Community Edition)</p>
                         <p style="text-align: center; margin-bottom: 15px;">
                             Desarrollado por: <strong style="color: var(--accent-color-hover);">JuansesDev</strong>
                         </p>

@@ -275,7 +275,7 @@ export class StartMenu {
         for (const app of Object.values(this.webOS.apps)) {
             // Lógica para asignar app a una categoría
             // Esto es un ejemplo, ajústalo a tus necesidades
-            if (['minesweeper', 'chess'].includes(app.id)) {
+            if (['minesweeper', 'chess', 'doom'].includes(app.id)) {
                 categories['Games'].push(app);
             } else if (['browser'].includes(app.id)) {
                 categories['Internet'].push(app);
