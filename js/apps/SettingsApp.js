@@ -40,8 +40,11 @@ export class SettingsApp extends App {
                     <div class="setting-item wallpaper-gallery-container">
                         <label>Galería de Fondos:</label>
                         <div class="wallpaper-gallery">
-                            <div class="wallpaper-item" data-url="https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747688882/default_background_kocr6r.png">
-                                <img src="https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747688882/default_background_kocr6r.png" alt="Fondo Predeterminado Actual">
+                            <div class="wallpaper-item" data-url="public/AerionOs.png">
+                                <img src="public/AerionOs.png" alt="Fondo AerionOS">
+                            </div>
+                            <div class="wallpaper-item" data-url="public/AerionOs2.png">
+                                <img src="public/AerionOs2.png" alt="Fondo AerionOS 2">
                             </div>
                             <div class="wallpaper-item" data-url="https://res.cloudinary.com/dvrqgxoqf/image/upload/v1740490562/w0_Jr_Yx5bj_At_Uxp1_Gqs_ZV_0_3a55c9680d.png">
                                 <img src="https://res.cloudinary.com/dvrqgxoqf/image/upload/v1740490562/w0_Jr_Yx5bj_At_Uxp1_Gqs_ZV_0_3a55c9680d.png" alt="Fondo Clásico">
@@ -72,8 +75,8 @@ export class SettingsApp extends App {
                     </div>
                 </div>
                 <div class="settings-category">
-                    <h3><i class="fas fa-info-circle"></i> Acerca de AuraOS</h3>
-                    <p><strong>AuraOS - Community Edition</strong> v0.4</p>
+                    <h3><i class="fas fa-info-circle"></i> Acerca de AerionOS</h3>
+                    <p><strong>AerionOS - Community Edition</strong> v0.4</p>
                     <p>Un simulador de sistema operativo web creado con HTML, CSS y JavaScript modular.</p>
                     <p>© ${new Date().getFullYear()} JuansesDev</p>
                     <div class="setting-item">
@@ -143,7 +146,7 @@ export class SettingsApp extends App {
         const systemInfoButton = contentElement.querySelector('[data-action="system-info"]');
         if (systemInfoButton) {
             systemInfoButton.addEventListener('click', () => {
-                const windowId = 'about-auraos-settings'; // ID único para la ventana
+                const windowId = 'about-aerionos-settings'; // ID único para la ventana
 
                 // Comprobar si la ventana ya está abierta
                 const existingWindow = this.webOS.windowManager.getWindow(windowId);
@@ -156,7 +159,7 @@ export class SettingsApp extends App {
                 // 1. Crear la ventana usando la misma configuración que en Desktop.js
                 const aboutWindow = this.webOS.windowManager.createWindow(
                     windowId,
-                    'Acerca de AuraOS',      // Título
+                    'Acerca de AerionOS',      // Título
                     'fas fa-info-circle',    // Icono
                     { // Opciones de la ventana (tamaño, etc.)
                         width: 420, // Un poco más ancho para el contenido
@@ -171,14 +174,14 @@ export class SettingsApp extends App {
                 const aboutContentHTML = `
                     <div style="padding: 20px; line-height: 1.6; color: var(--text-color); font-family: var(--font-family);">
                         <h3 style="margin-bottom: 15px; color: var(--accent-color); text-align: center; font-size: 1.6em; font-weight: 500;">
-                            <i class="fab fa-linux" style="margin-right: 8px;"></i>AuraOS
+                            <i class="fab fa-linux" style="margin-right: 8px;"></i>AerionOS
                         </h3>
                         <p style="text-align: center; font-size: 0.95em; margin-bottom: 10px;">Versión 0.5 (Community Edition)</p>
                         <p style="text-align: center; margin-bottom: 15px;">
                             Desarrollado por: <strong style="color: var(--accent-color-hover);">JuansesDev</strong>
                         </p>
                         <p style="font-size: 0.9em; margin-bottom:8px;">
-                            AuraOS es un simulador de sistema operativo web interactivo,
+                            AerionOs es un simulador de sistema operativo web interactivo,
                             diseñado para demostrar habilidades en desarrollo front-end
                             utilizando HTML, CSS y JavaScript modular.
                         </p>
@@ -196,7 +199,7 @@ export class SettingsApp extends App {
                 if (aboutWindow) {
                     aboutWindow.setContent(aboutContentHTML);
                 } else {
-                    console.error("No se pudo crear la ventana 'Acerca de AuraOS'");
+                    console.error("No se pudo crear la ventana 'Acerca de AerionOS'");
                 }
             });
         }

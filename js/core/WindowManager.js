@@ -27,7 +27,7 @@ export class WindowManager extends EventEmittable {
         // El constructor de Window está definido en js/core/Window.js
         // Se importará en los archivos que lo utilicen (como App.js)
         // Aquí, simplemente llamamos a `new Window(...)` asumiendo que está disponible.
-        const newWindow = new window.AuraOS_Window(windowInstanceId, title, iconClass, this, options); // Usar referencia global por ahora
+        const newWindow = new window.AerionOs_Window(windowInstanceId, title, iconClass, this, options); // Usar referencia global por ahora
 
         this.openWindows[windowInstanceId] = newWindow;
         this.emit('windowOpened', newWindow);

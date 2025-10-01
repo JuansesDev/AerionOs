@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let highestZIndex = 100;
     let windowIdCounter = 0;
 
-    const DEFAULT_WALLPAPER_URL = 'https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747688882/default_background_kocr6r.png';
+    const DEFAULT_WALLPAPER_URL = 'public/AerionOs.png';
 
     // --- Reloj y Calendario ---
     function updateClock() {
@@ -521,7 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 content = getNotepadHTML();
                 break;
             case 'terminal':
-                content = `<div style="background: #000; color: #0F0; font-family: monospace; padding: 10px; height: 100%; overflow-y: auto;">AuraOS Terminal v0.1<br>> _</div>`;
+                content = `<div style="background: #000; color: #0F0; font-family: monospace; padding: 10px; height: 100%; overflow-y: auto;">AerionOS Terminal v0.1<br>> _</div>`;
                 break;
             case 'settings':
                 content = getSettingsHTML();
@@ -813,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="settings-category">
                     <h3><i class="fas fa-info-circle"></i> Acerca de</h3>
-                    <p><strong>AuraOS - Web Desktop Sim</strong></p>
+                    <p><strong>AerionOS - Web Desktop Sim</strong></p>
                     <p>Versión 0.2 Alpha</p>
                     <p>Un proyecto para demostrar capacidades de desarrollo Front-End.</p>
                 </div>

@@ -4,7 +4,7 @@ import { FileSystem } from './core/FileSystem.js';
 import { WindowManager } from './core/WindowManager.js';
 import { ContextMenu } from './core/ContextMenu.js';
 import { ModalSystem } from './core/ModalSystem.js';
-import { Window as AuraWindow } from './core/Window.js'; // Renombrar para evitar conflicto con window global
+import { Window as AerionWindow } from './core/Window.js'; // Renombrar para evitar conflicto con window global
 
 import { AuthScreen } from './ui/AuthScreen.js';
 import { Desktop } from './ui/Desktop.js';
@@ -27,15 +27,15 @@ import { DoomApp } from './apps/DoomApp.js'; // Importar Aplicación DOOM
 // Hacer Window accesible globalmente para que WindowManager pueda instanciarla
 // Esta es una solución temporal para la estructura actual. En un sistema más complejo
 // se podría usar inyección de dependencias o un service locator.
-window.AuraOS_Window = AuraWindow;
+window.AerionOs_Window = AerionWindow;
 
 
 class WebOS {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         if (!this.container) {
-            console.error(`AuraOS Error: Container element with ID '${containerId}' not found.`);
-            alert("Error crítico: No se pudo inicializar AuraOS. Contenedor no encontrado.");
+            console.error(`AerionOS Error: Container element with ID '${containerId}' not found.`);
+            alert("Error crítico: No se pudo inicializar AerionOS. Contenedor no encontrado.");
             return;
         }
 
@@ -68,7 +68,7 @@ class WebOS {
     }
 
     _onLogin(user) {
-        console.log(`AuraOS: User '${user.username}' logged in.`);
+        console.log(`AerionOS: User '${user.username}' logged in.`);
         this.authScreen.hide();
         this.container.innerHTML = ''; // Limpiar completamente por si acaso
 
@@ -89,7 +89,7 @@ class WebOS {
     }
 
     _onLogout(oldUser) {
-        console.log(`AuraOS: User '${oldUser?.username || 'Unknown'}' logged out.`);
+        console.log(`AerionOS: User '${oldUser?.username || 'Unknown'}' logged out.`);
         // Cerrar todas las ventanas
         Object.keys(this.windowManager.openWindows).forEach(winId => {
             const win = this.windowManager.getWindow(winId);
@@ -130,7 +130,7 @@ class WebOS {
             'drawing': new DrawingApp(this), // Registrar Aplicación de Dibujo
             'doom': new DoomApp(this) // Registrar Aplicación DOOM
         };
-        console.log("AuraOS: Apps registered:", Object.keys(this.apps));
+        console.log("AerionOS: Apps registered:", Object.keys(this.apps));
     }
 
     _populateDesktop() {
@@ -150,10 +150,10 @@ class WebOS {
     launchApp(appId, launchOptions = {}) {
         const app = this.apps[appId];
         if (app) {
-            console.log(`AuraOS: Launching app '${appId}' with options:`, launchOptions);
+            console.log(`AerionOS: Launching app '${appId}' with options:`, launchOptions);
             return app.launch(launchOptions);
         } else {
-            console.error(`AuraOS Error: Application '${appId}' not found.`);
+            console.error(`AerionOS Error: Application '${appId}' not found.`);
             alert(`Error: Aplicación "${appId}" no encontrada.`);
             return null;
         }
@@ -161,10 +161,10 @@ class WebOS {
 
     // Método para hacer auto-login con un usuario por defecto
     _autoLoginDefaultUser() {
-        const defaultUsername = 'AuraOsUser';
+        const defaultUsername = 'AerionOsUser';
         
         // Verificar si el usuario ya existe, si no, crearlo
-        const users = JSON.parse(localStorage.getItem('auraOS_users') || '{}');
+        const users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
         if (!users[defaultUsername]) {
             // Crear el usuario por defecto
             const result = this.userSession.register(defaultUsername);
@@ -195,8 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Adjuntar la instancia principal de WebOS al objeto window para depuración y acceso global si es necesario
-    window.AuraOS = new WebOS('aura-os-container');
-    console.log("AuraOS Initialized.");
+    window.AerionOS = new WebOS('aura-os-container');
+    console.log("AerionOS Initialized.");
 
     // Reemplazar el código de registro del Service Worker con este bloque más seguro
     // que evita intentar registrar el service worker completamente

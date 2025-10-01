@@ -276,11 +276,11 @@ export class Desktop {
 
 
     loadWallpaper() {
-        const defaultWallpaper = 'https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747688882/default_background_kocr6r.png';
+        const defaultWallpaper = 'public/AerionOs.png';
         const savedWallpaper = this._hasActiveUser() ? this.webOS.userSession.getUserSetting('wallpaper') : null;
         // console.log('Loading wallpaper:', savedWallpaper || '(none saved, using default)');
 
-        if (savedWallpaper && (savedWallpaper.startsWith('http') || savedWallpaper.startsWith('data:image'))) {
+        if (savedWallpaper && (savedWallpaper.startsWith('http') || savedWallpaper.startsWith('data:image') || savedWallpaper.startsWith('public/'))) {
             this.element.style.backgroundImage = `url('${savedWallpaper}')`;
         } else {
             this.element.style.backgroundImage = `url('${defaultWallpaper}')`;
@@ -291,8 +291,8 @@ export class Desktop {
     }
 
     setWallpaper(url) {
-        const defaultWallpaper = 'https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747688882/default_background_kocr6r.png';
-        if (url && (url.startsWith('http') || url.startsWith('data:image'))) {
+        const defaultWallpaper = 'public/AerionOs.png';
+        if (url && (url.startsWith('http') || url.startsWith('data:image') || url.startsWith('public/'))) {
             this.element.style.backgroundImage = `url('${url}')`;
             if (this._hasActiveUser()) {
                 this.webOS.userSession.setUserSetting('wallpaper', url);
@@ -338,8 +338,8 @@ export class Desktop {
                     this.webOS._populateDesktop(); // Asumiendo que este método existe y llama a addIcon
                  } },
                  { separator: true},
-                 { label: 'Acerca de AuraOS', icon: 'fa-info-circle', action: () => {
-                    const windowId = 'about-auraos-desktop';
+                 { label: 'Acerca de AerionOs', icon: 'fa-info-circle', action: () => {
+                    const windowId = 'about-AerionOs-desktop';
                     const existingWindow = this.webOS.windowManager.getWindowById(windowId);
                     if (existingWindow) {
                         existingWindow.focus();
@@ -347,21 +347,21 @@ export class Desktop {
                     }
                     const aboutWindow = this.webOS.windowManager.createWindow(
                         windowId,
-                        'Acerca de AuraOS',
+                        'Acerca de AerionOs',
                         'fas fa-info-circle',
                         { width: 420, height: 320, minWidth: 350, minHeight: 280, customClass: 'about-window-theme' }
                     );
                     const aboutContentHTML = `
                         <div style="padding: 20px; line-height: 1.6; color: var(--text-color); font-family: var(--font-family);">
                             <h3 style="margin-bottom: 15px; color: var(--accent-color); text-align: center; font-size: 1.6em; font-weight: 500;">
-                                <i class="fab fa-linux" style="margin-right: 8px;"></i>AuraOS
+                                <i class="fab fa-linux" style="margin-right: 8px;"></i>AerionOs
                             </h3>
                             <p style="text-align: center; font-size: 0.95em; margin-bottom: 10px;">Versión 0.5 (Community Edition)</p>
                             <p style="text-align: center; margin-bottom: 15px;">
                                 Desarrollado por: <strong style="color: var(--accent-color-hover);">JuansesDev</strong>
                             </p>
                             <p style="font-size: 0.9em; margin-bottom:8px;">
-                                AuraOS es un simulador de sistema operativo web interactivo,
+                                AerionOs es un simulador de sistema operativo web interactivo,
                                 diseñado para demostrar habilidades en desarrollo front-end
                                 utilizando HTML, CSS y JavaScript modular.
                             </p>
@@ -377,7 +377,7 @@ export class Desktop {
                     if (aboutWindow) {
                         aboutWindow.setContent(aboutContentHTML);
                     } else {
-                        console.error("No se pudo crear la ventana 'Acerca de AuraOS'");
+                        console.error("No se pudo crear la ventana 'Acerca de AerionOs'");
                     }
                  } }
             ];

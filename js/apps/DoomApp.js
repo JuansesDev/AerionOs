@@ -377,7 +377,7 @@ export class DoomApp extends App {
 
         // También usar un intervalo como backup para asegurar que el título se mantenga
         this.titleInterval = setInterval(() => {
-            if (document.title !== this.originalTitle) {
+            if (document.title !== this.originalTitle) {    
                 document.title = this.originalTitle;
             }
         }, 100); // Verificar cada 100ms

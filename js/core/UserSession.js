@@ -10,7 +10,7 @@ export class UserSession extends EventEmittable {
 
     // Carga los datos del usuario desde localStorage
     loadUser() {
-        const userData = localStorage.getItem('auraOS_currentUser');
+        const userData = localStorage.getItem('aerionOS_currentUser');
         if (userData) {
             this.currentUser = JSON.parse(userData);
         }
@@ -18,10 +18,10 @@ export class UserSession extends EventEmittable {
 
     // Inicia sesión con un nombre de usuario existente
     login(username) {
-        const users = JSON.parse(localStorage.getItem('auraOS_users') || '{}');
+        const users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
         if (users[username]) {
             this.currentUser = { username, data: users[username] }; // Cargar datos del usuario
-            localStorage.setItem('auraOS_currentUser', JSON.stringify(this.currentUser));
+            localStorage.setItem('aerionOS_currentUser', JSON.stringify(this.currentUser));
             this.emit('login', this.currentUser);
             return true;
         }
@@ -30,20 +30,20 @@ export class UserSession extends EventEmittable {
 
     // Registra un nuevo usuario
     register(username) {
-        let users = JSON.parse(localStorage.getItem('auraOS_users') || '{}');
+        let users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
         if (users[username]) {
             return { success: false, message: 'El nombre de usuario ya existe.' };
         }
         users[username] = {
             createdAt: new Date().toISOString(),
             settings: { // Default settings for new user
-                wallpaper: 'https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747688882/default_background_kocr6r.png' // Fondo predeterminado actualizado
+                wallpaper: 'public/AerionOs.png' // Fondo predeterminado actualizado
             }
         };
-        localStorage.setItem('auraOS_users', JSON.stringify(users));
+        localStorage.setItem('aerionOS_users', JSON.stringify(users));
 
         this.currentUser = { username, data: users[username] };
-        localStorage.setItem('auraOS_currentUser', JSON.stringify(this.currentUser));
+        localStorage.setItem('aerionOS_currentUser', JSON.stringify(this.currentUser));
         this.emit('login', this.currentUser);
         return { success: true };
     }
@@ -55,7 +55,7 @@ export class UserSession extends EventEmittable {
         this.emit('logout', oldUser);
         // Después limpiar los datos del usuario
         this.currentUser = null;
-        localStorage.removeItem('auraOS_currentUser');
+        localStorage.removeItem('aerionOS_currentUser');
     }
 
     // Verifica si hay un usuario autenticado
@@ -81,13 +81,13 @@ export class UserSession extends EventEmittable {
         if (this.currentUser && this.currentUser.data) {
             this.currentUser.data[key] = value;
             // Persist change to all users list
-            let users = JSON.parse(localStorage.getItem('auraOS_users') || '{}');
+            let users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
             if (users[this.currentUser.username]) {
                 users[this.currentUser.username][key] = value;
-                localStorage.setItem('auraOS_users', JSON.stringify(users));
+                localStorage.setItem('aerionOS_users', JSON.stringify(users));
             }
             // Persist change to current user session
-            localStorage.setItem('auraOS_currentUser', JSON.stringify(this.currentUser));
+            localStorage.setItem('aerionOS_currentUser', JSON.stringify(this.currentUser));
             this.emit('userDataChanged', { key, value });
         }
     }
@@ -101,16 +101,16 @@ export class UserSession extends EventEmittable {
             this.currentUser.data.settings[settingKey] = value;
 
             // Persist change to all users list
-            let users = JSON.parse(localStorage.getItem('auraOS_users') || '{}');
+            let users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
             if (users[this.currentUser.username]) {
                 if(!users[this.currentUser.username].settings) {
                     users[this.currentUser.username].settings = {};
                 }
                 users[this.currentUser.username].settings[settingKey] = value;
-                localStorage.setItem('auraOS_users', JSON.stringify(users));
+                localStorage.setItem('aerionOS_users', JSON.stringify(users));
 
                 // Actualizar también el objeto currentUser en localStorage
-                localStorage.setItem('auraOS_currentUser', JSON.stringify(this.currentUser));
+                localStorage.setItem('aerionOS_currentUser', JSON.stringify(this.currentUser));
                 console.log(`User setting updated: ${settingKey} = ${value}`);
 
                 this.emit('userSettingChanged', { key: settingKey, value });

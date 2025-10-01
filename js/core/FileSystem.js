@@ -3,7 +3,7 @@
 export class FileSystem {
     constructor(username) {
         this.username = username;
-        this.storageKey = `auraOS_fs_${this.username}`;
+        this.storageKey = `AerionOs_fs_${this.username}`;
         this.fs = this._loadFS();
         this._ensureBaseStructure();
     }

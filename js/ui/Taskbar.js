@@ -34,7 +34,7 @@ export class Taskbar {
         taskbarEl.innerHTML = `
             <div id="start-button-area">
                 <button id="start-button" aria-label="Menú de inicio">
-                    <img src="public/auraOs.svg" alt="AuraOS" class="start-button-icon">
+                    <img src="public/IconAerionOs.png" alt="AerionOs" class="start-button-icon">
                 </button>
             </div>
             <div id="taskbar-apps"></div>

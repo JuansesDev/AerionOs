@@ -1,6 +1,6 @@
 {
-  "name": "AuraOS Simulador Web",
-  "short_name": "AuraOS",
+  "name": "AerionOS Simulador Web",
+  "short_name": "AerionOS",
   "description": "Una simulación interactiva de un sistema operativo web por JuansesDev.",
   "start_url": "/",
   "display": "standalone",
@@ -8,13 +8,13 @@
   "theme_color": "#282c34",
   "icons": [
     {
-      "src": "public/auraOs-192.png",
+      "src": "public/IconAerionOs.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "public/auraOs-512.png",
+      "src": "public/IconAerionOs.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

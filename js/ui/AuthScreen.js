@@ -11,7 +11,7 @@ export class AuthScreen {
         const screen = document.createElement('div');
         screen.className = 'auth-screen';
         screen.innerHTML = `
-            <h2>${isRegister ? 'Crear Cuenta' : 'Iniciar Sesión en AuraOS'}</h2>
+            <h2>${isRegister ? 'Crear Cuenta' : 'Iniciar Sesión en AerionOs'}</h2>
             <div class="form-group">
                 <label for="auth-username">Nombre de Usuario:</label>
                 <input type="text" id="auth-username" name="username" required autocomplete="username">

@@ -1,8 +1,8 @@
-# AuraOS - Simulador de SO Web (Versión Beta)
+# AerionOS - Simulador de SO Web (Versión Beta)
 
-![AuraOS Desktop](https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747691727/auraos_jf7szq.png)
+![AerionOS Desktop](https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747691727/auraos_jf7szq.png)
 
-AuraOS es una simulación interactiva de un sistema operativo de escritorio que se ejecuta completamente en tu navegador, construida con **HTML, CSS y JavaScript (ES6+ Módulos)**. Este proyecto, actualmente en **versión Beta**, sirve como portafolio para demostrar la creación de interfaces complejas y aplicaciones web modulares.
+AerionOS es una simulación interactiva de un sistema operativo de escritorio que se ejecuta completamente en tu navegador, construida con **HTML, CSS y JavaScript (ES6+ Módulos)**. Este proyecto, actualmente en **versión Beta**, sirve como portafolio para demostrar la creación de interfaces complejas y aplicaciones web modulares.
 
 ## Características Destacadas
 
@@ -18,8 +18,26 @@ AuraOS es una simulación interactiva de un sistema operativo de escritorio que 
     *   Calculadora
     *   Navegador Web (básico, con **limitaciones debido a las políticas X-Frame-Options** de muchos sitios web que impiden su incrustación en iframes).
     *   Ajustes (personalización de fondo, info del sistema)
-    *   Juegos: Buscaminas y Ajedrez (1P vs IA simple / 2P local)
+    *   Aplicación de Dibujo (canvas interactivo con herramientas de dibujo)
+    *   Juegos: Buscaminas, Ajedrez (1P vs IA simple / 2P local) y **DOOM** (emulación completa del clásico juego)
 *   **Arquitectura Modular:** Código organizado en clases y módulos ES6.
+
+## Mejoras Recientes (v2024)
+
+*   **Rebranding Completo:** El proyecto ha sido renombrado de **AuraOS** a **AerionOS** con nueva identidad visual
+*   **Mejoras en UX/UI:**
+    *   Íconos de mayor tamaño en el menú principal para mejor usabilidad
+    *   Múltiples fondos de pantalla disponibles
+    *   Mejor consistencia visual con íconos PNG en lugar de SVG
+    *   Estilos de selección mejorados para elementos interactivos
+*   **Nuevas Funcionalidades:**
+    *   Emulación completa de DOOM usando DOSBox
+    *   Aplicación de dibujo con herramientas avanzadas
+    *   Sistema de gestión de wallpapers expandido
+*   **Correcciones Técnicas:**
+    *   Mejora en la persistencia de configuraciones de usuario
+    *   Optimización del sistema de archivos simulado
+    *   Corrección de referencias globales y módulos ES6
 
 ## Tecnologías
 
@@ -39,7 +57,7 @@ AuraOS es una simulación interactiva de un sistema operativo de escritorio que 
 
 Puedes probar la demo desde el siguiente enlace:
 
-[https://juansesdev.github.io/AuraOs/](https://juansesdev.github.io/AuraOs/)
+[https://juansesdev.github.io/AerionOS/](https://juansesdev.github.io/AerionOS/)
 
 ## Autor
 

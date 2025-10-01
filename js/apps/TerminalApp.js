@@ -46,11 +46,11 @@ export class TerminalApp extends App {
 
     _updatePrompt() {
         const username = this.webOS.userSession.getCurrentUsername() || 'user';
-        this.promptElement.textContent = `${username}@auraos:${this.currentPath}$ `;
+        this.promptElement.textContent = `${username}@aerionos:${this.currentPath}$ `;
     }
 
     _printWelcomeMessage() {
-        this._appendOutput("Bienvenido a la Terminal de AuraOS (Versión Muy Básica)");
+        this._appendOutput("Bienvenido a la Terminal de AerionOS (Versión Muy Básica)");
         this._appendOutput("Escribe 'help' para ver los comandos disponibles.");
         this._appendOutput(""); // Línea vacía
     }
