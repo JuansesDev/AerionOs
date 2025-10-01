@@ -26,10 +26,14 @@
 }
 
 /* Ajustes para el tema de Prism */
+
 .codeeditor-app pre[class*="language-"] {
     margin: 0;
     padding: 0;
     background: var(--secondary-bg, #21252b);
+    white-space: pre;
+    word-break: break-all;
+    overflow-x: auto;
 }
 
 .codeeditor-app code[class*="language-"] {

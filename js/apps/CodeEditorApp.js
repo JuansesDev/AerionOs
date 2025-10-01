@@ -45,8 +45,7 @@ export class CodeEditorApp extends App {
         this.statusBarInfo = contentElement.querySelector('.codeeditor-statusbar > span:first-child');
         this.fileTypeIndicator = contentElement.querySelector('.file-type-indicator');
 
-        // Estilos para los elementos de edición de código
-        this.textarea.style.cssText = `
+                this.textarea.style.cssText = `
             position: absolute;
             top: 0;
             left: 0;
@@ -58,15 +57,21 @@ export class CodeEditorApp extends App {
             font-size: 14px;
             line-height: 1.5;
             resize: none;
+            border: none;
+            outline: none;
+            white-space: pre;
+            overflow: auto;
             z-index: 1;
             caret-color: #fff;
+            padding: 10px;
+            box-sizing: border-box;
         `;
 
         codeContainer.style.cssText = `
             position: relative;
             width: 100%;
             height: 100%;
-            overflow: auto;
+            overflow: hidden;
             margin: 0;
             background: var(--secondary-bg, #21252b);
         `;
@@ -80,12 +85,13 @@ export class CodeEditorApp extends App {
             padding: 10px;
             margin: 0;
             pointer-events: none;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            white-space: pre;
             font-family: monospace;
             font-size: 14px;
             line-height: 1.5;
             tab-size: 2;
+            overflow: hidden;
+            z-index: 0;
         `;
 
         contentElement.querySelector('.codeeditor-toolbar').addEventListener('click', async (e) => {
@@ -102,14 +108,15 @@ export class CodeEditorApp extends App {
         });
         this.textarea.addEventListener('scroll', () => {
             // Sincronizar scroll entre el textarea y el elemento pre/code
-            this.codeEditor.parentElement.scrollTop = this.textarea.scrollTop;
-            this.codeEditor.parentElement.scrollLeft = this.textarea.scrollLeft;
+            const container = this.codeEditor.parentElement;
+            container.scrollTop = this.textarea.scrollTop;
+            container.scrollLeft = this.textarea.scrollLeft;
+            
+            // También sincronizar el elemento de código directamente
+            this.codeEditor.style.transform = `translate(-${this.textarea.scrollLeft}px, -${this.textarea.scrollTop}px)`;
         });
         this.textarea.addEventListener('click', () => this._updateCursorPosition());
         this.textarea.addEventListener('keyup', () => this._updateCursorPosition());
-
-        // Agregar padding para que coincida con el textarea
-        this.textarea.style.padding = '10px';
 
         windowInstance.on('beforeClose', () => this._handleBeforeClose());
         windowInstance.on('focus', () => this.textarea.focus());
@@ -129,13 +136,16 @@ export class CodeEditorApp extends App {
     _updateCodeHighlighting() {
         if (!this.codeEditor) return;
 
-        // Actualizar el contenido del editor con el valor del textarea
-        this.codeEditor.textContent = this.textarea.value;
+        // Limpiar el contenido antes de aplicar Prism
+        this.codeEditor.innerHTML = '';
 
         // Actualizar el lenguaje en el elemento si ha cambiado
         if (this.codeEditor.className !== `code-mirror language-${this.currentLanguage}`) {
             this.codeEditor.className = `code-mirror language-${this.currentLanguage}`;
         }
+
+        // Asignar el texto plano para evitar duplicados
+        this.codeEditor.textContent = this.textarea.value;
 
         // Aplicar el resaltado de sintaxis solo si Prism está disponible
         if (window.Prism) {
