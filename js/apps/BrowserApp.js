@@ -1,16 +1,8 @@
 import { App } from '../core/App.js';
 
-/**
- * BrowserApp v2.0 (El Interceptor Paranoico EXPERIMENTAL)
- * * Implementa un navegador web básico dentro de una ventana de la aplicación.
- * * Novedades:
- * - El script interceptor ahora también captura el evento 'keydown' (tecla Enter)
- * para evitar bypass de navegación en sitios complejos como Google.
- * - Lógica de intercepción unificada y más robusta.
- */
 export class BrowserApp extends App {
     constructor(webOS) {
-        super('browser', 'Navegador Web', 'fas fa-globe-americas', webOS, {
+        super('browser', 'Web Browser', 'fas fa-globe-americas', webOS, {
             window: { width: 800, height: 600, customClass: 'browser-app' }
         });
 
@@ -38,12 +30,12 @@ export class BrowserApp extends App {
     renderContent(contentElement, windowInstance, launchOptions) {
         contentElement.innerHTML = `
             <div class="browser-toolbar">
-                <button data-action="back" title="Atrás" disabled><i class="fas fa-arrow-left"></i></button>
-                <button data-action="forward" title="Adelante" disabled><i class="fas fa-arrow-right"></i></button>
-                <button data-action="reload" title="Recargar"><i class="fas fa-sync-alt"></i></button>
-                <input type="text" class="browser-address-bar" placeholder="Escribe una URL">
-                <button data-action="go" title="Ir"><i class="fas fa-arrow-right"></i></button>
-                <button data-action="proxy" title="Alternar Proxy" class="active"><i class="fas fa-shield-alt"></i></button>
+                <button data-action="back" title="Back" disabled><i class="fas fa-arrow-left"></i></button>
+                <button data-action="forward" title="Forward" disabled><i class="fas fa-arrow-right"></i></button>
+                <button data-action="reload" title="Reload"><i class="fas fa-sync-alt"></i></button>
+                <input type="text" class="browser-address-bar" placeholder="Type a URL">
+                <button data-action="go" title="Go"><i class="fas fa-arrow-right"></i></button>
+                <button data-action="proxy" title="Toggle Proxy" class="active"><i class="fas fa-shield-alt"></i></button>
             </div>
             <div class="browser-iframe-container">
                 <iframe sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-scripts allow-same-origin"
@@ -51,13 +43,13 @@ export class BrowserApp extends App {
                         referrerpolicy="no-referrer"></iframe>
                 <div class="iframe-message" style="display:none;">
                     <i class="fas fa-exclamation-circle"></i>
-                    <span class="message-title">Error al cargar la página</span>
+                    <span class="message-title">Error loading the page</span>
                     <p class="error-details"></p>
-                    <a href="#" class="try-alternative">Probar un sitio alternativo compatible</a>
+                    <a href="#" class="try-alternative">Try a compatible alternative site</a>
                 </div>
             </div>
         `;
-        
+
         this.iframe = contentElement.querySelector('iframe');
         this.addressBar = contentElement.querySelector('.browser-address-bar');
         this.iframeMessage = contentElement.querySelector('.iframe-message');
@@ -81,12 +73,12 @@ export class BrowserApp extends App {
         const initialUrl = launchOptions?.url || 'https://www.google.com';
         this._loadUrl(initialUrl);
     }
-    
+
     _handleIframeMessage(event) {
         if (event.source !== this.iframe.contentWindow) return;
         const data = event.data;
         if (data.type === 'navigate') {
-            console.log('Navegación interceptada desde el iframe a:', data.url);
+            console.log('Navigation intercepted from the iframe to:', data.url);
             this._loadUrl(data.url);
         }
     }
@@ -94,9 +86,9 @@ export class BrowserApp extends App {
     _processHtml(html, baseUrl) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        
+
         doc.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => tag.remove());
-        
+
         const existingBase = doc.querySelector('base');
         if (existingBase) existingBase.remove();
         const base = doc.createElement('base');
@@ -128,7 +120,6 @@ export class BrowserApp extends App {
                     }
                 };
 
-                // Interceptor para clics
                 document.addEventListener('click', (e) => {
                     const anchor = e.target.closest('a');
                     if (anchor && anchor.href) {
@@ -138,14 +129,12 @@ export class BrowserApp extends App {
                     }
                 }, true);
 
-                // Interceptor para envíos de formulario
                 document.addEventListener('submit', (e) => {
                     e.preventDefault();
                     e.stopImmediatePropagation();
                     handleSubmit(e.target);
                 }, true);
-                
-                // Interceptor para la tecla "Enter"
+
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         const form = e.target.closest('form');
@@ -172,27 +161,25 @@ export class BrowserApp extends App {
 
         this.currentOriginalUrl = fullUrl;
         this.addressBar.value = this.currentOriginalUrl;
-        this.window.setTitle(`Navegador Web - Cargando...`);
+        this.window.setTitle(`Web Browser - Loading...`);
 
         if (!fromHistory) { this._updateHistory(fullUrl); }
         if (!this.proxyEnabled) { this.iframe.src = this.currentOriginalUrl; return; }
-        
+
         const errors = [];
-        const FETCH_TIMEOUT = 10000; // 10 segundos de timeout por proxy
+        const FETCH_TIMEOUT = 10000;
 
         for (let i = 0; i < this.proxyServices.length; i++) {
             const proxyFn = this.proxyServices[i];
             const proxiedUrl = proxyFn(this.currentOriginalUrl);
-            this._showIframeLoadingScreen(`Cargando vía Proxy ${i + 1}/${this.proxyServices.length}...`, this.currentOriginalUrl);
+            this._showIframeLoadingScreen(`Loading via Proxy ${i + 1}/${this.proxyServices.length}...`, this.currentOriginalUrl);
 
             try {
-                // Controlador de timeout
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
                 const response = await fetch(proxiedUrl, { signal: controller.signal });
-                
-                // Limpiar el timeout si la petición finaliza a tiempo
+
                 clearTimeout(timeoutId);
 
                 if (!response.ok) { throw new Error(`Proxy error: ${response.status} ${response.statusText}`); }
@@ -210,19 +197,19 @@ export class BrowserApp extends App {
 
         console.error("All proxies failed.", errors);
         const finalErrorDetails = errors.some(e => e.includes('Failed to fetch'))
-            ? "El sitio no parece existir o hay un problema de red. Verifica la URL y tu conexión."
-            : "El sitio podría estar caído, no responder a tiempo o bloquear activamente los proxies.";
-        this._showIframeError("No se pudo cargar la página", finalErrorDetails);
+            ? "The site does not seem to exist or there is a network problem. Check the URL and your connection."
+            : "The site could be down, not responding in time, or actively blocking proxies.";
+        this._showIframeError("Could not load the page", finalErrorDetails);
     }
-    
-    _onIframeContentLoaded() { 
+
+    _onIframeContentLoaded() {
         if (this.iframe.style.display === 'none') {
             this._showIframeContent();
-            this.window.setTitle(`Navegador Web - ${this.currentOriginalUrl}`);
+            this.window.setTitle(`Web Browser - ${this.currentOriginalUrl}`);
         }
     }
 
-    _handleToolbarAction(action) { 
+    _handleToolbarAction(action) {
         switch(action) {
             case 'back': this._historyBack(); break;
             case 'forward': this._historyForward(); break;
@@ -235,7 +222,7 @@ export class BrowserApp extends App {
                 break;
         }
     }
-    
+
     _updateHistory(url) {
         if (this.iframeHistoryIndex < this.iframeHistory.length - 1) {
             this.iframeHistory = this.iframeHistory.slice(0, this.iframeHistoryIndex + 1);
@@ -245,7 +232,7 @@ export class BrowserApp extends App {
         this._updateNavButtons();
     }
 
-    _historyBack() { 
+    _historyBack() {
         if (this.iframeHistoryIndex > 0) {
             this.iframeHistoryIndex--;
             this._loadUrl(this.iframeHistory[this.iframeHistoryIndex], true);
@@ -261,7 +248,7 @@ export class BrowserApp extends App {
 
     updateProxyButtonState() {
         this.proxyButton.classList.toggle('active', this.proxyEnabled);
-        this.proxyButton.title = this.proxyEnabled ? 'Proxy activado (recomendado)' : 'Proxy desactivado (puede fallar)';
+        this.proxyButton.title = this.proxyEnabled ? 'Proxy enabled (recommended)' : 'Proxy disabled (may fail)';
     }
 
     _showIframeContent() {

@@ -1,31 +1,28 @@
-// Clase ClockCalendarWidget: Widget de reloj y calendario accesible desde la barra de tareas
 export class ClockCalendarWidget {
     constructor(webOS) {
         this.webOS = webOS;
         this.element = this._createDOM();
         this.isOpen = false;
-        this.currentDate = new Date(); // Fecha actual para la lógica del calendario
+        this.currentDate = new Date();
         this.clockInterval = null;
-        this.triggerElement = null; // Elemento que activa el widget
+        this.triggerElement = null;
 
         document.body.appendChild(this.element);
         this.boundGlobalClickHandler = (event) => this._handleGlobalClick(event);
     }
 
-    // Crea el DOM del widget
     _createDOM() {
         const widgetEl = document.createElement('div');
         widgetEl.id = 'clock-calendar-widget';
         widgetEl.classList.add('hidden');
-        // Estructura básica, se puede mejorar con CSS
         widgetEl.innerHTML = `
             <div class="widget-clock-time"></div>
             <div class="widget-clock-date"></div>
             <div class="calendar">
                 <div class="calendar-header">
-                    <button data-action="prev-month" class="calendar-nav-button" title="Mes anterior"><i class="fas fa-chevron-left"></i></button>
+                    <button data-action="prev-month" class="calendar-nav-button" title="Previous month"><i class="fas fa-chevron-left"></i></button>
                     <span class="current-month-year"></span>
-                    <button data-action="next-month" class="calendar-nav-button" title="Mes siguiente"><i class="fas fa-chevron-right"></i></button>
+                    <button data-action="next-month" class="calendar-nav-button" title="Next month"><i class="fas fa-chevron-right"></i></button>
                 </div>
                 <div class="calendar-days-header"></div>
                 <div class="calendar-grid"></div>
@@ -42,13 +39,11 @@ export class ClockCalendarWidget {
             this._renderCalendar();
         });
 
-        // Prevenir clics dentro del widget que lo cierren mediante el listener global
         widgetEl.addEventListener('click', (e) => e.stopPropagation());
 
         return widgetEl;
     }
 
-    // Actualiza la información de hora y fecha en el widget
     _updateClockDisplay() {
         const now = new Date();
         const timeEl = this.element.querySelector('.widget-clock-time');
@@ -62,7 +57,6 @@ export class ClockCalendarWidget {
         }
     }
 
-    // Renderiza el calendario con la fecha actual
     _renderCalendar() {
         const monthYearEl = this.element.querySelector('.current-month-year');
         const gridEl = this.element.querySelector('.calendar-grid');
@@ -72,9 +66,8 @@ export class ClockCalendarWidget {
 
         monthYearEl.textContent = this.currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
-        // Renderizar encabezado de días de la semana
-        if (daysHeaderEl.children.length === 0) { // Solo renderizar una vez
-            const days = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá']; // Nombres cortos de los días en español
+        if (daysHeaderEl.children.length === 0) {
+            const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
             days.forEach(day => {
                 const dayEl = document.createElement('div');
                 dayEl.textContent = day;
@@ -83,7 +76,7 @@ export class ClockCalendarWidget {
             });
         }
 
-        gridEl.innerHTML = ''; // Limpiar cuadrícula anterior
+        gridEl.innerHTML = '';
 
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
@@ -92,16 +85,13 @@ export class ClockCalendarWidget {
         const lastDayOfMonth = new Date(year, month + 1, 0);
         const today = new Date();
 
-        // Agregar celdas vacías para los días antes del primero del mes
-        // Domingo es 0, Lunes es 1, etc.
-        let startDay = firstDayOfMonth.getDay(); // 0 para Domingo, 1 para Lunes...
+        let startDay = firstDayOfMonth.getDay();
         for (let i = 0; i < startDay; i++) {
             const emptyCell = document.createElement('div');
             emptyCell.classList.add('calendar-day', 'empty');
             gridEl.appendChild(emptyCell);
         }
 
-        // Agregar celdas de días
         for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
             const dayCell = document.createElement('div');
             dayCell.classList.add('calendar-day');
@@ -115,28 +105,24 @@ export class ClockCalendarWidget {
         }
     }
 
-    // Posiciona el widget respecto al elemento activador
     _positionWidget() {
         if (!this.triggerElement || !this.element) return;
 
         const triggerRect = this.triggerElement.getBoundingClientRect();
-        const widgetRect = this.element.getBoundingClientRect(); // Asegurarse de que esto se llame después de que el widget sea visible o tenga dimensiones
+        const widgetRect = this.element.getBoundingClientRect();
 
-        let top = triggerRect.top - widgetRect.height - 5; // Margen de 5px encima del activador
-        let left = triggerRect.right - widgetRect.width;   // Alinear el borde derecho del widget con el borde derecho del activador
+        let top = triggerRect.top - widgetRect.height - 5;
+        let left = triggerRect.right - widgetRect.width;
 
-        // Ajustar si está fuera de los límites de la ventana
-        if (top < 5) { // Si está demasiado cerca de la parte superior o fuera de la pantalla
-            top = triggerRect.bottom + 5; // Posicionar debajo del activador
+        if (top < 5) {
+            top = triggerRect.bottom + 5;
         }
-        if (left < 5) { // Si está demasiado cerca del borde izquierdo
+        if (left < 5) {
             left = 5;
         }
-        // Asegurarse de que el widget no se salga del borde derecho de la pantalla
         if (left + widgetRect.width > window.innerWidth - 5) {
             left = window.innerWidth - widgetRect.width - 5;
         }
-        // Asegurarse de que el widget no se salga del borde inferior de la pantalla (si se posiciona debajo)
         if (top + widgetRect.height > window.innerHeight - 5) {
             top = window.innerHeight - widgetRect.height - 5;
         }
@@ -147,45 +133,40 @@ export class ClockCalendarWidget {
     }
 
 
-    // Maneja los clics fuera del widget para cerrarlo
     _handleGlobalClick(event) {
         if (this.isOpen &&
             !this.element.contains(event.target) &&
-            this.triggerElement && // Asegurarse de que triggerElement esté configurado
+            this.triggerElement &&
             !this.triggerElement.contains(event.target)) {
             this.hide();
         }
     }
 
-    // Alterna la visibilidad del widget
     toggle(triggerElement) {
-        if (triggerElement) { // Actualizar el elemento activador cada vez que se llama al toggle con él
+        if (triggerElement) {
             this.triggerElement = triggerElement;
         }
         this.isOpen ? this.hide() : this.show();
     }
 
-    // Muestra el widget
     show() {
         if (this.isOpen) return;
-        this.currentDate = new Date(); // Restablecer al mes actual al abrir
+        this.currentDate = new Date();
         this._updateClockDisplay();
         this._renderCalendar();
         this.element.classList.remove('hidden');
         this.isOpen = true;
 
-        // Posicionamiento diferido hasta después de que el elemento se renderice y las dimensiones estén disponibles
         requestAnimationFrame(() => {
             this._positionWidget();
         });
 
         if (!this.clockInterval) {
-            this.clockInterval = setInterval(() => this._updateClockDisplay(), 1000); // Actualizar reloj cada segundo cuando está abierto
+            this.clockInterval = setInterval(() => this._updateClockDisplay(), 1000);
         }
         document.addEventListener('click', this.boundGlobalClickHandler, true);
     }
 
-    // Oculta el widget
     hide() {
         if (!this.isOpen) return;
         this.element.classList.add('hidden');
@@ -197,9 +178,8 @@ export class ClockCalendarWidget {
         document.removeEventListener('click', this.boundGlobalClickHandler, true);
     }
 
-    // Limpia recursos al destruir
     destroy() {
-        this.hide(); // Asegurarse de que los listeners se eliminen
+        this.hide();
         if (this.element && this.element.parentNode) {
             this.element.parentNode.removeChild(this.element);
         }

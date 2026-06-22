@@ -1,20 +1,13 @@
-// js/ui/Desktop.js
 export class Desktop {
     constructor(webOS) {
         this.webOS = webOS;
         this.element = document.createElement('div');
         this.element.id = 'desktop';
-        this.iconPositions = {}; // { appId: { col, row } }
+        this.iconPositions = {};
         this.draggedIcon = null;
 
-        // Estas dimensiones deben ser consistentes con tu CSS
-        // (tamaño del icono + gap)
-        // CSS: minmax(90px, ...) + gap: 10px -> 90 + 10 = 100 (pero usamos el tamaño del contenido directo)
-        // El cálculo de drop usa esto para determinar la celda, el padding de #desktop y el gap de grid
-        // se manejan por el navegador al colocar los elementos.
-        // Lo importante es que el tamaño de la "zona sensible" de cada celda sea correcto.
-        this.GRID_CELL_WIDTH = 90 + 10; // (icon width + grid gap)
-        this.GRID_CELL_HEIGHT = 100 + 10; // (icon height + grid gap)
+        this.GRID_CELL_WIDTH = 90 + 10;
+        this.GRID_CELL_HEIGHT = 100 + 10;
 
         this.loadIconPositions();
         this.loadWallpaper();
@@ -57,63 +50,53 @@ export class Desktop {
         let col = 1, row = 1;
         const desktopRect = this.element.getBoundingClientRect();
 
-        // Usar clientHeight y clientWidth si son > 0, sino fallbacks
-        // Considerar el padding del #desktop al calcular el espacio disponible para celdas
         const desktopPaddingTop = parseFloat(getComputedStyle(this.element).paddingTop) || 0;
         const desktopPaddingLeft = parseFloat(getComputedStyle(this.element).paddingLeft) || 0;
 
-        const availableHeight = (desktopRect.height > 0 ? desktopRect.height : (window.innerHeight - 40)) - desktopPaddingTop * 2; // - taskbar, - padding
-        const availableWidth = (desktopRect.width > 0 ? desktopRect.width : (window.innerWidth - 20)) - desktopPaddingLeft * 2; // - scrollbar, - padding
+        const availableHeight = (desktopRect.height > 0 ? desktopRect.height : (window.innerHeight - 40)) - desktopPaddingTop * 2;
+        const availableWidth = (desktopRect.width > 0 ? desktopRect.width : (window.innerWidth - 20)) - desktopPaddingLeft * 2;
 
         let maxRowsEffective = 1;
         if (availableHeight > 0 && this.GRID_CELL_HEIGHT > 0) {
             maxRowsEffective = Math.max(1, Math.floor(availableHeight / this.GRID_CELL_HEIGHT));
         } else {
-            maxRowsEffective = Math.floor((window.innerHeight - 40 - desktopPaddingTop * 2) / this.GRID_CELL_HEIGHT) || 5; // Fallback general
+            maxRowsEffective = Math.floor((window.innerHeight - 40 - desktopPaddingTop * 2) / this.GRID_CELL_HEIGHT) || 5;
         }
 
         let maxColsEffective = 1;
         if (availableWidth > 0 && this.GRID_CELL_WIDTH > 0) {
             maxColsEffective = Math.max(1, Math.floor(availableWidth / this.GRID_CELL_WIDTH));
         } else {
-            maxColsEffective = Math.floor((window.innerWidth - 20 - desktopPaddingLeft * 2) / this.GRID_CELL_WIDTH) || 5; // Fallback general
+            maxColsEffective = Math.floor((window.innerWidth - 20 - desktopPaddingLeft * 2) / this.GRID_CELL_WIDTH) || 5;
         }
 
         let attempts = 0;
-        // Aumentar el número de intentos para ser más exhaustivo si es necesario
-        const maxTotalSlotsToTry = (maxRowsEffective * maxColsEffective) + (maxRowsEffective + maxColsEffective) * 2; // Más que el total de celdas visibles
+        const maxTotalSlotsToTry = (maxRowsEffective * maxColsEffective) + (maxRowsEffective + maxColsEffective) * 2;
 
-        // Lógica "Column-first": llenar verticalmente, luego pasar a la siguiente columna
         while (attempts < maxTotalSlotsToTry) {
             if (!occupiedSlots.has(`${col}-${row}`)) {
                 return { col, row };
             }
 
-            col++; // Intentar la siguiente columna en la misma fila
-            if (col > maxColsEffective) { // Si superamos las columnas disponibles en esta fila
-                col = 1;       // Resetear a la primera columna
-                row++;         // Mover a la siguiente fila
+            col++;
+            if (col > maxColsEffective) {
+                col = 1;
+                row++;
             }
 
-            // Si nos salimos de las filas calculadas y hemos probado muchas veces, ir a fallback
             if (row > maxRowsEffective && attempts > maxRowsEffective * maxColsEffective) {
                  break;
             }
             attempts++;
         }
 
-        // Fallback si no se encontró un slot después de muchos intentos
-        // Este fallback intenta seguir la misma lógica column-first, pero permitiendo que col/row
-        // excedan los maxColsEffective/maxRowsEffective calculados, asumiendo que el grid puede expandirse.
         console.warn(`Could not find an empty slot after ${attempts} attempts within calculated bounds. Trying extended fallback placement.`);
-        // Continuar desde donde se quedó col, row, o reiniciar si row ya era muy grande
-        if (row > maxRowsEffective + 3) { // Si 'row' ya se pasó mucho, reiniciar búsqueda más allá
+        if (row > maxRowsEffective + 3) {
             row = 1;
-            col = maxColsEffective + 1; // Empezar en una nueva columna más allá de lo visible
+            col = maxColsEffective + 1;
         }
 
         let fallbackAttempts = 0;
-        // Permitir un número generoso de intentos adicionales
         const maxFallbackAttempts = (maxColsEffective + 10) * (maxRowsEffective + 10);
 
         while(fallbackAttempts < maxFallbackAttempts) {
@@ -121,18 +104,16 @@ export class Desktop {
                 return { col, row };
             }
             col++;
-            // Permitir que las columnas crezcan más allá de maxColsEffective
             if (col > (maxColsEffective + 10)) {
                 col = 1;
                 row++;
             }
             fallbackAttempts++;
-             // Si nos pasamos de un número razonable de filas en fallback
             if (row > maxRowsEffective + 10) break;
         }
 
         console.error("Ultimate fallback for _findNextAvailableSlot: Could not place icon. Returning 1,1 (may cause overlap).");
-        return { col: 1, row: 1 }; // Como último recurso, puede causar superposición
+        return { col: 1, row: 1 };
     }
 
 
@@ -152,19 +133,16 @@ export class Desktop {
             <span>${appName}</span>
         `;
         iconEl.addEventListener('dblclick', (e) => {
-            // Prevenir que dblclick en el icono active el drag (Firefox a veces lo hace)
             e.preventDefault();
             this.webOS.launchApp(appId);
         });
 
-        // Prevenir que el drag se inicie si el dblclick está en progreso (manejo de dblclick vs drag)
         let clickTimer = null;
         iconEl.addEventListener('mousedown', (e) => {
-            // Solo botón izquierdo
             if (e.button !== 0) return;
             clickTimer = setTimeout(() => {
-                clickTimer = null; // Si pasa el tiempo, no es dblclick
-            }, 300); // Umbral de doble clic
+                clickTimer = null;
+            }, 300);
         });
         iconEl.addEventListener('mouseup', () => {
             if (clickTimer) {
@@ -179,9 +157,6 @@ export class Desktop {
             console.log(`No saved position for ${appId}, finding new slot...`);
             position = this._findNextAvailableSlot();
             this.iconPositions[appId] = position;
-            // Es importante guardar inmediatamente si es un icono nuevo
-            // para que el siguiente _findNextAvailableSlot lo tenga en cuenta.
-            // No se guardará en userSession hasta un drag explícito o al cerrar/actualizar.
         }
 
         iconEl.style.gridColumnStart = position.col;
@@ -193,8 +168,6 @@ export class Desktop {
     _setupDragAndDrop() {
         this.element.addEventListener('dragstart', (e) => {
             if (e.target.classList.contains('desktop-icon')) {
-                // Comprobar si fue un click rápido (intento de dblclick)
-                // No es perfecto, pero puede ayudar a evitar drags no deseados en dblclick
                 const isDoubleClickAttempt = e.target.dataset.isDoubleClickAttempt === 'true';
                 delete e.target.dataset.isDoubleClickAttempt;
                 if (isDoubleClickAttempt) {
@@ -205,7 +178,6 @@ export class Desktop {
                 this.draggedIcon = e.target;
                 e.dataTransfer.setData('text/plain', e.target.dataset.appId);
                 e.dataTransfer.effectAllowed = 'move';
-                // Pequeño timeout para que el navegador capture el "fantasma" antes de aplicar la clase
                 setTimeout(() => {
                     if(this.draggedIcon) this.draggedIcon.classList.add('dragging');
                 }, 0);
@@ -219,7 +191,6 @@ export class Desktop {
             }
         });
 
-        // Permitir soltar sobre el escritorio
         this.element.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
@@ -234,8 +205,6 @@ export class Desktop {
 
             if (iconBeingDragged && iconBeingDragged.dataset.appId === droppedAppId) {
                 const desktopRect = this.element.getBoundingClientRect();
-                // Posición del ratón relativa al escritorio
-                // Ajustar por el padding del escritorio para calcular la celda correctamente
                 const desktopStyle = getComputedStyle(this.element);
                 const desktopPaddingLeft = parseFloat(desktopStyle.paddingLeft) || 0;
                 const desktopPaddingTop = parseFloat(desktopStyle.paddingTop) || 0;
@@ -243,34 +212,26 @@ export class Desktop {
                 const x = e.clientX - desktopRect.left - desktopPaddingLeft;
                 const y = e.clientY - desktopRect.top - desktopPaddingTop;
 
-                // Calcular la celda del grid (sumamos 1 porque grid-column/row son 1-indexed)
                 const targetCol = Math.max(1, Math.floor(x / this.GRID_CELL_WIDTH) + 1);
                 const targetRow = Math.max(1, Math.floor(y / this.GRID_CELL_HEIGHT) + 1);
 
-                // Verificar si la celda destino está ocupada por OTRO icono
                 const occupyingAppId = Object.keys(this.iconPositions).find(id =>
                     id !== droppedAppId &&
-                    this.iconPositions[id] && // Asegurarse que la posición exista
+                    this.iconPositions[id] &&
                     this.iconPositions[id].col === targetCol &&
                     this.iconPositions[id].row === targetRow
                 );
 
                 if (occupyingAppId) {
-                    // La celda está ocupada por otro icono. No mover.
                     console.warn(`Slot ${targetCol},${targetRow} is occupied by app ${occupyingAppId}. Icon ${droppedAppId} will not move there.`);
                 } else {
-                    // La celda está libre o es la celda original del icono (si se soltó sin que otro la ocupe)
                     iconBeingDragged.style.gridColumnStart = targetCol;
                     iconBeingDragged.style.gridRowStart = targetRow;
 
-                    // Actualizar la posición en memoria
                     this.iconPositions[droppedAppId] = { col: targetCol, row: targetRow };
-                    // Guardar todas las posiciones en la sesión del usuario
                     this.saveIconPositions();
                 }
             }
-
-            // dragend se encargará de quitar la clase 'dragging' y limpiar this.draggedIcon
         });
     }
 
@@ -278,7 +239,6 @@ export class Desktop {
     loadWallpaper() {
         const defaultWallpaper = 'public/AerionOs.png';
         const savedWallpaper = this._hasActiveUser() ? this.webOS.userSession.getUserSetting('wallpaper') : null;
-        // console.log('Loading wallpaper:', savedWallpaper || '(none saved, using default)');
 
         if (savedWallpaper && (savedWallpaper.startsWith('http') || savedWallpaper.startsWith('data:image') || savedWallpaper.startsWith('public/'))) {
             this.element.style.backgroundImage = `url('${savedWallpaper}')`;
@@ -300,7 +260,7 @@ export class Desktop {
             } else {
                 console.warn('No active user session, wallpaper applied but not saved');
             }
-        } else if (url === "") { // Reset to default
+        } else if (url === "") {
             this.element.style.backgroundImage = `url('${defaultWallpaper}')`;
             if (this._hasActiveUser()) {
                 this.webOS.userSession.setUserSetting('wallpaper', defaultWallpaper);
@@ -320,25 +280,20 @@ export class Desktop {
     _setupEventListeners() {
         this.element.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            // Evitar menú contextual si se está arrastrando un icono o si el target es un icono
             if (this.draggedIcon || e.target.closest('.desktop-icon')) {
-                // Podrías tener un menú contextual diferente para los iconos aquí
-                // Por ahora, simplemente no mostramos el menú del escritorio.
                 return;
             }
 
             const items = [
-                { label: 'Cambiar Fondo (Ajustes)', icon: 'fa-palette', action: () => this.webOS.launchApp('settings') },
-                { label: 'Actualizar Escritorio', icon: 'fa-sync-alt', action: () => {
-                    // Guardar posiciones actuales antes de recargar, por si acaso
+                { label: 'Change Wallpaper (Settings)', icon: 'fa-palette', action: () => this.webOS.launchApp('settings') },
+                { label: 'Refresh Desktop', icon: 'fa-sync-alt', action: () => {
                     this.saveIconPositions();
                     this.element.querySelectorAll('.desktop-icon').forEach(icon => icon.remove());
-                    // Volver a cargar posiciones (por si algo cambió externamente, aunque no debería ser común)
                     this.loadIconPositions();
-                    this.webOS._populateDesktop(); // Asumiendo que este método existe y llama a addIcon
+                    this.webOS._populateDesktop();
                  } },
                  { separator: true},
-                 { label: 'Acerca de AerionOs', icon: 'fa-info-circle', action: () => {
+                 { label: 'About AerionOs', icon: 'fa-info-circle', action: () => {
                     const windowId = 'about-AerionOs-desktop';
                     const existingWindow = this.webOS.windowManager.getWindowById(windowId);
                     if (existingWindow) {
@@ -347,7 +302,7 @@ export class Desktop {
                     }
                     const aboutWindow = this.webOS.windowManager.createWindow(
                         windowId,
-                        'Acerca de AerionOs',
+                        'About AerionOs',
                         'fas fa-info-circle',
                         { width: 420, height: 320, minWidth: 350, minHeight: 280, customClass: 'about-window-theme' }
                     );
@@ -356,18 +311,18 @@ export class Desktop {
                             <h3 style="margin-bottom: 15px; color: var(--accent-color); text-align: center; font-size: 1.6em; font-weight: 500;">
                                 <i class="fab fa-linux" style="margin-right: 8px;"></i>AerionOs
                             </h3>
-                            <p style="text-align: center; font-size: 0.95em; margin-bottom: 10px;">Versión 0.5 (Community Edition)</p>
+                            <p style="text-align: center; font-size: 0.95em; margin-bottom: 10px;">Version 0.5 (Community Edition)</p>
                             <p style="text-align: center; margin-bottom: 15px;">
-                                Desarrollado por: <strong style="color: var(--accent-color-hover);">JuansesDev</strong>
+                                Developed by: <strong style="color: var(--accent-color-hover);">JuansesDev</strong>
                             </p>
                             <p style="font-size: 0.9em; margin-bottom:8px;">
-                                AerionOs es un simulador de sistema operativo web interactivo,
-                                diseñado para demostrar habilidades en desarrollo front-end
-                                utilizando HTML, CSS y JavaScript modular.
+                                AerionOs is an interactive web operating system simulator,
+                                designed to demonstrate front-end development skills
+                                using HTML, CSS and modular JavaScript.
                             </p>
                             <p style="font-size:0.9em;margin-top:10px;">
-                                Imágenes de fondo por defecto proporcionadas por
-                                <a href="https://pixeldreamsgallery.me/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-color);text-decoration:none;">Pixel Dreams Gallery</a> y otras fuentes.
+                                Default background images provided by
+                                <a href="https://pixeldreamsgallery.me/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-color);text-decoration:none;">Pixel Dreams Gallery</a> and other sources.
                             </p>
                             <p style="text-align:center;margin-top:25px;font-size:0.85em;color:var(--text-color-darker);">
                                 © ${new Date().getFullYear()} JuansesDev.
@@ -377,14 +332,13 @@ export class Desktop {
                     if (aboutWindow) {
                         aboutWindow.setContent(aboutContentHTML);
                     } else {
-                        console.error("No se pudo crear la ventana 'Acerca de AerionOs'");
+                        console.error("Could not create the 'About AerionOs' window");
                     }
                  } }
             ];
             this.webOS.contextMenu.show(e.clientX, e.clientY, items);
         });
 
-        // Añadir un listener para cerrar modales personalizados haciendo clic fuera de ellos
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('custom-modal-overlay')) {
                 e.target.remove();
@@ -392,7 +346,7 @@ export class Desktop {
         });
     }
 
-    showAlertModal(message, title = 'Alerta', icon = 'fa-exclamation-circle') {
+    showAlertModal(message, title = 'Alert', icon = 'fa-exclamation-circle') {
         const overlay = document.createElement('div');
         overlay.className = 'custom-modal-overlay';
 
@@ -415,7 +369,7 @@ export class Desktop {
 
         const okButton = document.createElement('button');
         okButton.className = 'confirm';
-        okButton.textContent = 'Aceptar';
+        okButton.textContent = 'OK';
 
         footer.appendChild(okButton);
 
@@ -426,10 +380,8 @@ export class Desktop {
 
         document.body.appendChild(overlay);
 
-        // Enfocar el botón automáticamente
         setTimeout(() => okButton.focus(), 100);
 
-        // Manejar el evento Enter y Espacio para confirmar
         const handleKeydown = (e) => {
             if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
                 e.preventDefault();
@@ -446,7 +398,7 @@ export class Desktop {
         }
     }
 
-    showConfirmModal(message, onConfirm, title = 'Confirmar', confirmText = 'Aceptar', cancelText = 'Cancelar', icon = 'fa-question-circle') {
+    showConfirmModal(message, onConfirm, title = 'Confirm', confirmText = 'OK', cancelText = 'Cancel', icon = 'fa-question-circle') {
         const overlay = document.createElement('div');
         overlay.className = 'custom-modal-overlay';
 
@@ -485,10 +437,8 @@ export class Desktop {
 
         document.body.appendChild(overlay);
 
-        // Enfocar el botón de confirmar automáticamente
         setTimeout(() => confirmButton.focus(), 100);
 
-        // Manejar el evento Enter para confirmar y Escape para cancelar
         const handleKeydown = (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();

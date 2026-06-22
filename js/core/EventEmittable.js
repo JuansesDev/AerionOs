@@ -1,4 +1,3 @@
-// js/core/EventEmittable.js
 export class EventEmittable {
     constructor() {
         this._events = {};

@@ -1,4 +1,3 @@
-// Clase UserSession: Gestiona la sesión del usuario, autenticación y datos persistentes
 import { EventEmittable } from './EventEmittable.js';
 
 export class UserSession extends EventEmittable {
@@ -8,7 +7,6 @@ export class UserSession extends EventEmittable {
         this.loadUser();
     }
 
-    // Carga los datos del usuario desde localStorage
     loadUser() {
         const userData = localStorage.getItem('aerionOS_currentUser');
         if (userData) {
@@ -16,11 +14,10 @@ export class UserSession extends EventEmittable {
         }
     }
 
-    // Inicia sesión con un nombre de usuario existente
     login(username) {
         const users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
         if (users[username]) {
-            this.currentUser = { username, data: users[username] }; // Cargar datos del usuario
+            this.currentUser = { username, data: users[username] };
             localStorage.setItem('aerionOS_currentUser', JSON.stringify(this.currentUser));
             this.emit('login', this.currentUser);
             return true;
@@ -28,16 +25,15 @@ export class UserSession extends EventEmittable {
         return false;
     }
 
-    // Registra un nuevo usuario
     register(username) {
         let users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
         if (users[username]) {
-            return { success: false, message: 'El nombre de usuario ya existe.' };
+            return { success: false, message: 'The username already exists.' };
         }
         users[username] = {
             createdAt: new Date().toISOString(),
-            settings: { // Default settings for new user
-                wallpaper: 'public/AerionOs.png' // Fondo predeterminado actualizado
+            settings: {
+                wallpaper: 'public/AerionOs.png'
             }
         };
         localStorage.setItem('aerionOS_users', JSON.stringify(users));
@@ -48,27 +44,21 @@ export class UserSession extends EventEmittable {
         return { success: true };
     }
 
-    // Cierra la sesión actual
     logout() {
         const oldUser = this.currentUser;
-        // Emitir el evento 'logout' antes de eliminar los datos del usuario
         this.emit('logout', oldUser);
-        // Después limpiar los datos del usuario
         this.currentUser = null;
         localStorage.removeItem('aerionOS_currentUser');
     }
 
-    // Verifica si hay un usuario autenticado
     isAuthenticated() {
         return !!this.currentUser;
     }
 
-    // Obtiene el nombre de usuario actual
     getCurrentUsername() {
         return this.currentUser ? this.currentUser.username : null;
     }
 
-    // Obtiene datos específicos del usuario
     getUserData(key) {
         if (this.currentUser && this.currentUser.data) {
             return key ? this.currentUser.data[key] : this.currentUser.data;
@@ -76,23 +66,19 @@ export class UserSession extends EventEmittable {
         return null;
     }
 
-    // Actualiza los datos del usuario
     updateUserData(key, value) {
         if (this.currentUser && this.currentUser.data) {
             this.currentUser.data[key] = value;
-            // Persist change to all users list
             let users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
             if (users[this.currentUser.username]) {
                 users[this.currentUser.username][key] = value;
                 localStorage.setItem('aerionOS_users', JSON.stringify(users));
             }
-            // Persist change to current user session
             localStorage.setItem('aerionOS_currentUser', JSON.stringify(this.currentUser));
             this.emit('userDataChanged', { key, value });
         }
     }
 
-    // Establece una configuración específica del usuario
     setUserSetting(settingKey, value) {
         if (this.currentUser && this.currentUser.data) {
             if (!this.currentUser.data.settings) {
@@ -100,7 +86,6 @@ export class UserSession extends EventEmittable {
             }
             this.currentUser.data.settings[settingKey] = value;
 
-            // Persist change to all users list
             let users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
             if (users[this.currentUser.username]) {
                 if(!users[this.currentUser.username].settings) {
@@ -109,7 +94,6 @@ export class UserSession extends EventEmittable {
                 users[this.currentUser.username].settings[settingKey] = value;
                 localStorage.setItem('aerionOS_users', JSON.stringify(users));
 
-                // Actualizar también el objeto currentUser en localStorage
                 localStorage.setItem('aerionOS_currentUser', JSON.stringify(this.currentUser));
                 console.log(`User setting updated: ${settingKey} = ${value}`);
 
@@ -124,7 +108,6 @@ export class UserSession extends EventEmittable {
         return false;
     }
 
-    // Obtiene una configuración específica del usuario
     getUserSetting(settingKey) {
         const settings = this.getUserData('settings');
         const value = settings ? settings[settingKey] : undefined;

@@ -1,27 +1,25 @@
-// Clase AuthScreen: Gestiona la pantalla de autenticación del sistema
 export class AuthScreen {
     constructor(containerElement, userSession) {
         this.container = containerElement;
         this.userSession = userSession;
-        this.element = null; // Contendrá el DOM de la pantalla de autenticación
+        this.element = null;
     }
 
-    // Crea el DOM de la pantalla de autenticación
     _createDOM(isRegister = false) {
         const screen = document.createElement('div');
         screen.className = 'auth-screen';
         screen.innerHTML = `
-            <h2>${isRegister ? 'Crear Cuenta' : 'Iniciar Sesión en AerionOs'}</h2>
+            <h2>${isRegister ? 'Create Account' : 'Sign In to AerionOs'}</h2>
             <div class="form-group">
-                <label for="auth-username">Nombre de Usuario:</label>
+                <label for="auth-username">Username:</label>
                 <input type="text" id="auth-username" name="username" required autocomplete="username">
             </div>
-            <button id="auth-button">${isRegister ? 'Registrarse' : 'Ingresar'}</button>
+            <button id="auth-button">${isRegister ? 'Register' : 'Sign In'}</button>
             <div class="auth-error" id="auth-error-message"></div>
             <p class="auth-switch">
                 ${isRegister
-                    ? '¿Ya tienes cuenta? <span data-action="login">Inicia sesión</span>'
-                    : '¿No tienes cuenta? <span data-action="register">Regístrate</span>'}
+                    ? 'Already have an account? <span data-action="login">Sign in</span>'
+                    : "Don't have an account? <span data-action=\"register\">Sign up</span>"}
             </p>
         `;
 
@@ -32,23 +30,22 @@ export class AuthScreen {
 
         screen.querySelector('.auth-switch span').addEventListener('click', (e) => {
             const action = e.target.dataset.action;
-            this.show(action === 'register'); // Re-render with the new mode
+            this.show(action === 'register');
         });
         return screen;
     }
 
-    // Maneja el envío del formulario de autenticación
     _handleSubmit(isRegister) {
         const usernameInput = this.element.querySelector('#auth-username');
         const username = usernameInput.value.trim();
         const errorMessageElement = this.element.querySelector('#auth-error-message');
 
         if (!username) {
-            errorMessageElement.textContent = 'El nombre de usuario es requerido.';
+            errorMessageElement.textContent = 'Username is required.';
             usernameInput.focus();
             return;
         }
-        errorMessageElement.textContent = ''; // Clear previous error
+        errorMessageElement.textContent = '';
 
         let result;
         if (isRegister) {
@@ -57,26 +54,22 @@ export class AuthScreen {
                  errorMessageElement.textContent = result.message;
                  usernameInput.select();
             }
-            // Login event will be emitted by UserSession, WebOS will handle it
         } else {
             const success = this.userSession.login(username);
             if (!success) {
-                errorMessageElement.textContent = 'Usuario no encontrado o incorrecto.';
+                errorMessageElement.textContent = 'User not found or incorrect.';
                 usernameInput.select();
             }
-            // Login event will be emitted by UserSession
         }
     }
 
-    // Muestra la pantalla de autenticación
     show(isRegister = false) {
-        this.container.innerHTML = ''; // Clear container
+        this.container.innerHTML = '';
         this.element = this._createDOM(isRegister);
         this.container.appendChild(this.element);
         this.element.querySelector('#auth-username').focus();
     }
 
-    // Oculta la pantalla de autenticación
     hide() {
         if (this.element && this.element.parentNode) {
             this.element.remove();

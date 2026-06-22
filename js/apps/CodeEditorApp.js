@@ -1,19 +1,18 @@
-// js/apps/CodeEditorApp.js
 import { App } from '../core/App.js';
 
 export class CodeEditorApp extends App {
     constructor(webOS) {
-        super('codeeditor', 'Editor de Código', 'fas fa-code', webOS, {
+        super('codeeditor', 'Code Editor', 'fas fa-code', webOS, {
             window: { width: 700, height: 550, minWidth: 500, minHeight: 400, customClass: 'codeeditor-app' },
-            allowMultipleInstances: true // Permitir múltiples editores
+            allowMultipleInstances: true
         });
         this.textarea = null;
         this.currentFilePath = null;
         this.originalContent = "";
         this.isDirty = false;
-        this.previewWindow = null; // Para la vista previa de HTML
-        this.codeEditor = null; // Elemento para el editor con resaltado
-        this.currentLanguage = 'plaintext'; // Lenguaje actualmente usado
+        this.previewWindow = null;
+        this.codeEditor = null;
+        this.currentLanguage = 'plaintext';
     }
 
     renderContent(contentElement, windowInstance, launchOptions) {
@@ -21,20 +20,20 @@ export class CodeEditorApp extends App {
 
         contentElement.innerHTML = `
             <div class="codeeditor-toolbar">
-                <button data-action="new" title="Nuevo (Ctrl+N)"><i class="fas fa-file"></i> Nuevo</button>
-                <button data-action="open" title="Abrir (Ctrl+O)"><i class="fas fa-folder-open"></i> Abrir</button>
-                <button data-action="save" title="Guardar (Ctrl+S)"><i class="fas fa-save"></i> Guardar</button>
-                <button data-action="save-as" title="Guardar Como..."><i class="fas fa-file-export"></i> Guardar Como</button>
+                <button data-action="new" title="New (Ctrl+N)"><i class="fas fa-file"></i> New</button>
+                <button data-action="open" title="Open (Ctrl+O)"><i class="fas fa-folder-open"></i> Open</button>
+                <button data-action="save" title="Save (Ctrl+S)"><i class="fas fa-save"></i> Save</button>
+                <button data-action="save-as" title="Save As..."><i class="fas fa-file-export"></i> Save As</button>
                 <span class="codeeditor-filename-display"></span>
-                <button data-action="run-html" title="Ejecutar HTML (en nueva ventana)" style="margin-left: auto;"><i class="fab fa-html5"></i> Ejecutar HTML</button>
+                <button data-action="run-html" title="Run HTML (in new window)" style="margin-left: auto;"><i class="fab fa-html5"></i> Run HTML</button>
             </div>
             <div class="code-editor-container">
                 <pre class="code-mirror-wrapper"><code class="code-mirror language-plaintext"></code></pre>
-                <textarea class="codeeditor-textarea" spellcheck="false" placeholder="Escribe tu código aquí..."></textarea>
+                <textarea class="codeeditor-textarea" spellcheck="false" placeholder="Write your code here..."></textarea>
             </div>
             <div class="codeeditor-statusbar">
-                <span>Línea: 1, Col: 1</span>
-                <span class="file-type-indicator">Texto Plano</span>
+                <span>Line: 1, Col: 1</span>
+                <span class="file-type-indicator">Plain Text</span>
             </div>
         `;
 
@@ -99,7 +98,6 @@ export class CodeEditorApp extends App {
             if (button) await this._handleToolbarAction(button.dataset.action);
         });
 
-        // Manejar eventos del textarea
         this.textarea.addEventListener('input', () => {
             this.isDirty = this.textarea.value !== this.originalContent;
             this._updateWindowTitleAndStatus();
@@ -107,12 +105,10 @@ export class CodeEditorApp extends App {
             this._updateCursorPosition();
         });
         this.textarea.addEventListener('scroll', () => {
-            // Sincronizar scroll entre el textarea y el elemento pre/code
             const container = this.codeEditor.parentElement;
             container.scrollTop = this.textarea.scrollTop;
             container.scrollLeft = this.textarea.scrollLeft;
-            
-            // También sincronizar el elemento de código directamente
+
             this.codeEditor.style.transform = `translate(-${this.textarea.scrollLeft}px, -${this.textarea.scrollTop}px)`;
         });
         this.textarea.addEventListener('click', () => this._updateCursorPosition());
@@ -121,7 +117,6 @@ export class CodeEditorApp extends App {
         windowInstance.on('beforeClose', () => this._handleBeforeClose());
         windowInstance.on('focus', () => this.textarea.focus());
 
-        // Atajos de teclado
         windowInstance.element.addEventListener('keydown', (e) => this._handleKeyDown(e));
 
         if (launchOptions && launchOptions.filePathToOpen) {
@@ -132,28 +127,22 @@ export class CodeEditorApp extends App {
         this.textarea.focus();
     }
 
-    // Método para actualizar el resaltado de sintaxis
     _updateCodeHighlighting() {
         if (!this.codeEditor) return;
 
-        // Limpiar el contenido antes de aplicar Prism
         this.codeEditor.innerHTML = '';
 
-        // Actualizar el lenguaje en el elemento si ha cambiado
         if (this.codeEditor.className !== `code-mirror language-${this.currentLanguage}`) {
             this.codeEditor.className = `code-mirror language-${this.currentLanguage}`;
         }
 
-        // Asignar el texto plano para evitar duplicados
         this.codeEditor.textContent = this.textarea.value;
 
-        // Aplicar el resaltado de sintaxis solo si Prism está disponible
         if (window.Prism) {
             Prism.highlightElement(this.codeEditor);
         }
     }
 
-    // Detectar el lenguaje basado en la extensión del archivo
     _detectLanguage(filePath) {
         if (!filePath) return 'plaintext';
 
@@ -187,39 +176,38 @@ export class CodeEditorApp extends App {
                     break;
             }
         }
-        // Permitir Tab para indentar (muy básico)
         if (e.key === 'Tab' && e.target === this.textarea) {
             e.preventDefault();
             const start = this.textarea.selectionStart;
             const end = this.textarea.selectionEnd;
-            this.textarea.value = this.textarea.value.substring(0, start) + "  " + this.textarea.value.substring(end); // 2 espacios por tab
+            this.textarea.value = this.textarea.value.substring(0, start) + "  " + this.textarea.value.substring(end);
             this.textarea.selectionStart = this.textarea.selectionEnd = start + 2;
         }
     }
 
     async _handleToolbarAction(action) {
         switch(action) {
-            case 'new': 
-                if (this.isDirty) { 
+            case 'new':
+                if (this.isDirty) {
                     const shouldDiscard = await this.webOS.modals.showConfirm(
-                        "Hay cambios sin guardar. ¿Descartarlos y crear nuevo?", 
-                        'Cambios sin guardar', 
+                        "There are unsaved changes. Discard them and create a new file?",
+                        'Unsaved changes',
                         'fa-exclamation-triangle'
                     );
-                    if (!shouldDiscard) return; 
+                    if (!shouldDiscard) return;
                 }
-                this._newFile(); 
+                this._newFile();
                 break;
-            case 'open': 
-                if (this.isDirty) { 
+            case 'open':
+                if (this.isDirty) {
                     const shouldDiscard = await this.webOS.modals.showConfirm(
-                        "Hay cambios sin guardar. ¿Descartarlos y abrir otro?", 
-                        'Cambios sin guardar', 
+                        "There are unsaved changes. Discard them and open another file?",
+                        'Unsaved changes',
                         'fa-exclamation-triangle'
                     );
-                    if (!shouldDiscard) return; 
+                    if (!shouldDiscard) return;
                 }
-                await this._openFilePrompt(); 
+                await this._openFilePrompt();
                 break;
             case 'save': this._saveFile(); break;
             case 'save-as': await this._saveFileAs(); break;
@@ -228,26 +216,24 @@ export class CodeEditorApp extends App {
     }    async _handleBeforeClose() {
         if (this.isDirty) {
             const shouldSave = await this.webOS.modals.showConfirm(
-                "Tienes cambios sin guardar. ¿Guardarlos antes de cerrar?", 
-                'Cambios sin guardar', 
+                "You have unsaved changes. Save them before closing?",
+                'Unsaved changes',
                 'fa-exclamation-triangle'
             );
             if (shouldSave) {
                 const saved = this._saveFile();
-                // Si el guardado falla o es cancelado, idealmente no se cierra.
-                // Esto es complicado sin que el evento 'beforeClose' pueda ser cancelado.
             }
         }
         if (this.previewWindow && this.webOS.windowManager.getWindow(this.previewWindow.id)) {
-            this.previewWindow.close(); // Cerrar ventana de vista previa si está abierta
+            this.previewWindow.close();
         }
     }
 
     _updateWindowTitleAndStatus() {
         if (!this.activeWindowInstance) return;
-        const baseTitle = "Editor de Código";
-        let fileName = "Sin título";
-        let fileType = "Texto Plano";
+        const baseTitle = "Code Editor";
+        let fileName = "Untitled";
+        let fileType = "Plain Text";
 
         if (this.currentFilePath) {
             fileName = this.currentFilePath.substring(this.currentFilePath.lastIndexOf('/') + 1);
@@ -270,7 +256,7 @@ export class CodeEditorApp extends App {
         const textLines = this.textarea.value.substring(0, this.textarea.selectionStart).split("\n");
         const currentLine = textLines.length;
         const currentCol = textLines[textLines.length - 1].length + 1;
-        this.statusBarInfo.textContent = `Línea: ${currentLine}, Col: ${currentCol}`;
+        this.statusBarInfo.textContent = `Line: ${currentLine}, Col: ${currentCol}`;
     }
 
     _newFile() {
@@ -293,14 +279,13 @@ export class CodeEditorApp extends App {
             this.currentFilePath = path;
             this.isDirty = false;
 
-            // Detectar el lenguaje adecuado basado en la extensión
             this.currentLanguage = this._detectLanguage(path);
 
             this._updateWindowTitleAndStatus();
             this._updateCodeHighlighting();
             this._updateCursorPosition();
         } else {
-            this.webOS.modals.showAlert(`Error: No se pudo abrir el archivo "${path}".`, 'Error al abrir archivo', 'fa-exclamation-triangle');
+            this.webOS.modals.showAlert(`Error: Could not open the file "${path}".`, 'Error opening file', 'fa-exclamation-triangle');
             this._newFile();
         }
     }
@@ -308,8 +293,8 @@ export class CodeEditorApp extends App {
     async _openFilePrompt() {
         const defaultPath = this.currentFilePath ?
             this.currentFilePath.substring(0, this.currentFilePath.lastIndexOf('/') + 1) :
-            "/Documents/"; // O quizás "/" para más flexibilidad
-        
+            "/Documents/";
+
         try {
             const path = await this.webOS.modals.showFileOpenDialog(
                 defaultPath,
@@ -320,11 +305,11 @@ export class CodeEditorApp extends App {
                 this._loadFile(path);
             }
         } catch (error) {
-            console.log('Apertura de archivo cancelada');
+            console.log('File opening cancelled');
         }
     }
 
-    _saveFile() { // Devuelve true si se guardó, false si se canceló o falló
+    _saveFile() {
         if (!this.currentFilePath) {
             return this._saveFileAs();
         }
@@ -336,34 +321,32 @@ export class CodeEditorApp extends App {
             this._updateWindowTitleAndStatus();
             return true;
         } else {
-            this.webOS.modals.showAlert("Error al guardar el archivo.", 'Error de guardado', 'fa-exclamation-triangle');
+            this.webOS.modals.showAlert("Error saving the file.", 'Save error', 'fa-exclamation-triangle');
             return false;
         }
     }
 
-    async _saveFileAs() { // Devuelve true si se guardó, false si se canceló o falló
+    async _saveFileAs() {
         let defaultDir = "/Documents/";
-        let defaultName = "nuevo_archivo.txt"; // Extensión por defecto
+        let defaultName = "new_file.txt";
 
         if (this.currentFilePath) {
             defaultDir = this.currentFilePath.substring(0, this.currentFilePath.lastIndexOf('/') + 1);
             defaultName = this.currentFilePath.substring(this.currentFilePath.lastIndexOf('/') + 1);
         }
 
-        // Usar el modal del explorador de archivos
         const newPath = await this.webOS.modals.showFileSaveDialog(
-            defaultDir, 
-            defaultName, 
+            defaultDir,
+            defaultName,
             ['.txt', '.html', '.css', '.js', '.json', '.md', '.xml', '.csv']
         );
 
-        if (!newPath) return false; // Usuario canceló
+        if (!newPath) return false;
 
-        // Verificar si el archivo ya existe y pedir confirmación
         if (this.webOS.fs.pathExists(newPath)) {
             const shouldOverwrite = await this.webOS.modals.showConfirm(
-                `El archivo "${newPath}" ya existe. ¿Deseas sobrescribirlo?`, 
-                'Archivo existe', 
+                `The file "${newPath}" already exists. Do you want to overwrite it?`,
+                'File exists',
                 'fa-exclamation-triangle'
             );
             if (!shouldOverwrite) return false;
@@ -375,14 +358,13 @@ export class CodeEditorApp extends App {
             this.originalContent = this.textarea.value;
             this.isDirty = false;
 
-            // Actualizar el lenguaje al guardar con una nueva extensión
             this.currentLanguage = this._detectLanguage(newPath);
 
             this._updateWindowTitleAndStatus();
             this._updateCodeHighlighting();
             return true;
         } else {
-            this.webOS.modals.showAlert("Error al guardar el archivo como.", 'Error de guardado', 'fa-exclamation-triangle');
+            this.webOS.modals.showAlert("Error saving the file as.", 'Save error', 'fa-exclamation-triangle');
             return false;
         }
     }
@@ -390,26 +372,22 @@ export class CodeEditorApp extends App {
     _runHtmlPreview() {
         const htmlContent = this.textarea.value;
         if (!htmlContent.trim()) {
-            this.webOS.modals.showAlert("No hay contenido HTML para ejecutar.", 'Sin contenido', 'fa-info-circle');
+            this.webOS.modals.showAlert("There is no HTML content to run.", 'No content', 'fa-info-circle');
             return;
         }
 
-        // Cerrar ventana de vista previa anterior si existe
         if (this.previewWindow && this.webOS.windowManager.getWindow(this.previewWindow.id)) {
             this.previewWindow.close();
         }
 
         this.previewWindow = this.webOS.windowManager.createWindow(
-            'html-preview-' + Date.now(), // ID único
-            'Vista Previa HTML',
+            'html-preview-' + Date.now(),
+            'HTML Preview',
             'fab fa-html5',
             { width: 800, height: 600, customClass: 'html-preview-window' }
         );
 
         if (this.previewWindow) {
-            // Usar un iframe para aislar el contenido y manejar scripts/estilos
-            // Es importante definir correctamente el sandbox para seguridad
-            // Eliminamos allow-same-origin para evitar escapar del sandbox
             const iframeHTML = `
                 <div class="html-preview-container" style="width:100%; height:100%; overflow:auto;">
                     <iframe
@@ -418,16 +396,14 @@ export class CodeEditorApp extends App {
                         srcdoc="${this._escapeHtml(htmlContent)}">
                     </iframe>
                     <div class="preview-notice" style="position:absolute; bottom:10px; right:10px; background:#ff8c00; color:white; padding:5px 10px; border-radius:4px; font-size:12px; opacity:0.8;">
-                        Vista previa segura (sin acceso al origen principal)
+                        Safe preview (no access to the main origin)
                     </div>
                 </div>`;
             this.previewWindow.setContent(iframeHTML);
         }
     }
 
-    // Método de ayuda para escapar HTML de manera segura
     _escapeHtml(html) {
-        // Escapamos " para evitar problemas con el atributo srcdoc
         return html.replace(/"/g, '&quot;');
     }
 
@@ -436,8 +412,8 @@ export class CodeEditorApp extends App {
         if (launchOptions && launchOptions.filePathToOpen) {
             if (this.isDirty) {
                 const shouldDiscard = await this.webOS.modals.showConfirm(
-                    "Tienes cambios sin guardar. ¿Descartar y abrir el nuevo archivo en esta ventana?", 
-                    'Cambios sin guardar', 
+                    "You have unsaved changes. Discard and open the new file in this window?",
+                    'Unsaved changes',
                     'fa-exclamation-triangle'
                 );
                 if (!shouldDiscard) {
@@ -450,7 +426,7 @@ export class CodeEditorApp extends App {
 
     onClose() {
         if (this.previewWindow && this.webOS.windowManager.getWindow(this.previewWindow.id)) {
-            this.previewWindow.close(); // Asegurarse de cerrar la vista previa
+            this.previewWindow.close();
         }
         super.onClose();
     }

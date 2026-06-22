@@ -1,4 +1,3 @@
-// js/apps/TerminalApp.js
 import { App } from '../core/App.js';
 
 export class TerminalApp extends App {
@@ -6,7 +5,7 @@ export class TerminalApp extends App {
         super('terminal', 'Terminal', 'fas fa-terminal', webOS, {
             window: { width: 600, height: 400, minWidth: 400, minHeight: 300, customClass: 'terminal-app' }
         });
-        this.currentPath = '/'; // Iniciar en la raíz del FS del usuario
+        this.currentPath = '/';
         this.history = [];
         this.historyIndex = -1;
 
@@ -37,10 +36,9 @@ export class TerminalApp extends App {
 
         this.inputElement.addEventListener('keydown', (e) => this._handleInput(e));
 
-        // Hacer clic en cualquier parte del terminal enfoca el input
         contentElement.addEventListener('click', () => this.inputElement.focus());
 
-        windowInstance.on('focus', () => this.inputElement.focus()); // Enfocar al activar ventana
+        windowInstance.on('focus', () => this.inputElement.focus());
         windowInstance.setTitle(`Terminal - ${this.currentPath}`);
     }
 
@@ -50,9 +48,9 @@ export class TerminalApp extends App {
     }
 
     _printWelcomeMessage() {
-        this._appendOutput("Bienvenido a la Terminal de AerionOS (Versión Muy Básica)");
-        this._appendOutput("Escribe 'help' para ver los comandos disponibles.");
-        this._appendOutput(""); // Línea vacía
+        this._appendOutput("Welcome to the AerionOS Terminal (Very Basic Version)");
+        this._appendOutput("Type 'help' to see the available commands.");
+        this._appendOutput("");
     }
 
     _handleInput(e) {
@@ -64,20 +62,19 @@ export class TerminalApp extends App {
             if (commandLine) {
                 this._appendOutput(`${this.promptElement.textContent}${commandLine}`);
                 this.history.push(commandLine);
-                this.historyIndex = this.history.length; // Apuntar al final para nuevo comando
+                this.historyIndex = this.history.length;
                 this._processCommand(commandLine);
             } else {
-                // Si solo se presiona Enter sin comando, solo añadir nueva línea de prompt
                 this._appendOutput(this.promptElement.textContent);
             }
-            this._updatePrompt(); // Actualizar prompt para la siguiente línea (podría haber cambiado el path)
-            this.outputElement.scrollTop = this.outputElement.scrollHeight; // Scroll al final
+            this._updatePrompt();
+            this.outputElement.scrollTop = this.outputElement.scrollHeight;
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             if (this.history.length > 0 && this.historyIndex > 0) {
                 this.historyIndex--;
                 this.inputElement.value = this.history[this.historyIndex];
-                this.inputElement.setSelectionRange(this.inputElement.value.length, this.inputElement.value.length); // Mover cursor al final
+                this.inputElement.setSelectionRange(this.inputElement.value.length, this.inputElement.value.length);
             }
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
@@ -86,12 +83,11 @@ export class TerminalApp extends App {
                 this.inputElement.value = this.history[this.historyIndex];
             } else if (this.historyIndex === this.history.length -1) {
                 this.historyIndex++;
-                this.inputElement.value = ""; // Limpiar si está al final del historial
+                this.inputElement.value = "";
             }
              this.inputElement.setSelectionRange(this.inputElement.value.length, this.inputElement.value.length);
         } else if (e.key === 'Tab') {
             e.preventDefault();
-            // Autocompletado básico (muy simple)
             const currentText = this.inputElement.value;
             const parts = currentText.split(' ');
             const toComplete = parts.pop();
@@ -110,7 +106,6 @@ export class TerminalApp extends App {
                     } else if (matches.length > 1) {
                         this._appendOutput(this.promptElement.textContent + currentText);
                         matches.forEach(m => this._appendOutput(m.name + (m.type === 'folder' ? '/' : '')));
-                        // No actualizar prompt aquí, solo mostrar opciones
                     }
                 }
             }
@@ -120,18 +115,14 @@ export class TerminalApp extends App {
     _appendOutput(text, className = '') {
         const line = document.createElement('div');
         line.className = `terminal-line ${className}`;
-        // Escapar HTML para evitar XSS si el texto viene de una fuente no confiable (ej. contenido de archivo)
-        // Para comandos y salida del sistema, podemos confiar en él o usar textContent.
-        // Si 'text' puede contener '<' o '>', textContent es más seguro.
-        // Por ahora, para simplicidad, asumimos que la salida del sistema es segura.
-        line.innerHTML = text.replace(/ /g, ' '); // Para preservar espacios múltiples
+        line.innerHTML = text.replace(/ /g, ' ');
         this.outputElement.appendChild(line);
         this.outputElement.scrollTop = this.outputElement.scrollHeight;
     }
 
     _resolveRelativePath(path) {
         if (!path || typeof path !== 'string') return this.currentPath;
-        if (path.startsWith('/')) return this.webOS.fs._normalizePath(path); // Ya es absoluto
+        if (path.startsWith('/')) return this.webOS.fs._normalizePath(path);
 
         let newPathParts = this.currentPath === '/' ? [] : this.currentPath.split('/').filter(p => p);
         const relativeParts = path.split('/').filter(p => p);
@@ -148,23 +139,23 @@ export class TerminalApp extends App {
     }
 
     _processCommand(commandLine) {
-        const [command, ...args] = commandLine.split(/\s+/).filter(s => s); // Dividir por espacios y quitar vacíos
+        const [command, ...args] = commandLine.split(/\s+/).filter(s => s);
 
         if (!command) return;
 
         switch (command.toLowerCase()) {
             case 'help':
-                this._appendOutput("Comandos disponibles:");
-                this._appendOutput("  help              - Muestra esta ayuda.");
-                this._appendOutput("  echo [texto]      - Repite el texto ingresado.");
-                this._appendOutput("  date              - Muestra la fecha y hora actual.");
-                this._appendOutput("  clear             - Limpia la pantalla de la terminal.");
-                this._appendOutput("  ls [ruta]         - Lista el contenido de un directorio (por defecto el actual).");
-                this._appendOutput("  cat [archivo]     - Muestra el contenido de un archivo de texto.");
-                this._appendOutput("  cd [directorio]   - Cambia al directorio especificado.");
-                this._appendOutput("  mkdir [nombre]    - Crea un nuevo directorio.");
-                this._appendOutput("  pwd               - Muestra la ruta del directorio actual.");
-                this._appendOutput("  whoami            - Muestra el nombre de usuario actual.");
+                this._appendOutput("Available commands:");
+                this._appendOutput("  help              - Shows this help.");
+                this._appendOutput("  echo [text]       - Repeats the entered text.");
+                this._appendOutput("  date              - Shows the current date and time.");
+                this._appendOutput("  clear             - Clears the terminal screen.");
+                this._appendOutput("  ls [path]         - Lists the contents of a directory (current by default).");
+                this._appendOutput("  cat [file]        - Shows the contents of a text file.");
+                this._appendOutput("  cd [directory]    - Changes to the specified directory.");
+                this._appendOutput("  mkdir [name]      - Creates a new directory.");
+                this._appendOutput("  pwd               - Shows the current directory path.");
+                this._appendOutput("  whoami            - Shows the current username.");
                 break;
             case 'echo':
                 this._appendOutput(args.join(' '));
@@ -174,16 +165,16 @@ export class TerminalApp extends App {
                 break;
             case 'clear':
                 this.outputElement.innerHTML = '';
-                this._printWelcomeMessage(); // Re-imprimir bienvenida para no dejarla totalmente vacía
+                this._printWelcomeMessage();
                 break;
             case 'ls':
                 const lsPathArg = args[0] ? this._resolveRelativePath(args[0]) : this.currentPath;
                 const items = this.webOS.fs.listDirectory(lsPathArg);
                 if (items) {
                     if (items.length === 0) {
-                        this._appendOutput("Directorio vacío.");
+                        this._appendOutput("Empty directory.");
                     } else {
-                        items.sort((a, b) => { // Ordenar: carpetas primero, luego por nombre
+                        items.sort((a, b) => {
                             if (a.type === 'folder' && b.type !== 'folder') return -1;
                             if (a.type !== 'folder' && b.type === 'folder') return 1;
                             return a.name.localeCompare(b.name);
@@ -192,54 +183,50 @@ export class TerminalApp extends App {
                         });
                     }
                 } else {
-                    this._appendOutput(`ls: no se puede acceder a '${lsPathArg}': No es un directorio o no existe.`);
+                    this._appendOutput(`ls: cannot access '${lsPathArg}': Not a directory or does not exist.`);
                 }
                 break;
             case 'cat':
                 if (args.length === 0) {
-                    this._appendOutput("cat: falta operando de archivo.");
+                    this._appendOutput("cat: missing file operand.");
                     break;
                 }
                 const catPath = this._resolveRelativePath(args[0]);
                 const content = this.webOS.fs.readFile(catPath);
                 if (content !== null) {
-                    // Dividir por líneas para evitar problemas con líneas muy largas y scroll del div
                     content.split('\n').forEach(line => this._appendOutput(line));
                 } else {
-                    this._appendOutput(`cat: ${args[0]}: No es un archivo o no existe.`);
+                    this._appendOutput(`cat: ${args[0]}: Not a file or does not exist.`);
                 }
                 break;
             case 'cd':
                 if (args.length === 0) {
-                    // 'cd' sin argumentos podría ir al home del usuario, que es '/' aquí
                     this.currentPath = '/';
                 } else {
                     const newPath = this._resolveRelativePath(args[0]);
                     if (this.webOS.fs.isDirectory(newPath)) {
                         this.currentPath = newPath;
                     } else {
-                        this._appendOutput(`cd: ${args[0]}: No es un directorio o no existe.`);
+                        this._appendOutput(`cd: ${args[0]}: Not a directory or does not exist.`);
                     }
                 }
                 this.activeWindowInstance.setTitle(`Terminal - ${this.currentPath}`);
-                this.webOS.userSession.setUserSetting('terminalLastPath', this.currentPath); // Guardar último path
+                this.webOS.userSession.setUserSetting('terminalLastPath', this.currentPath);
                 break;
             case 'mkdir':
                 if (args.length === 0) {
-                    this._appendOutput("mkdir: falta operando.");
+                    this._appendOutput("mkdir: missing operand.");
                     break;
                 }
                 const dirName = args[0];
-                // Evitar nombres con /
                 if (dirName.includes('/')) {
-                     this._appendOutput("mkdir: nombre de directorio inválido (no usar '/').");
+                     this._appendOutput("mkdir: invalid directory name (do not use '/').");
                      break;
                 }
                 const newDirPath = this._resolveRelativePath(dirName);
                 if (this.webOS.fs.createDirectory(newDirPath)) {
-                    // this._appendOutput(`Directorio '${dirName}' creado.`); // Opcional
                 } else {
-                    this._appendOutput(`mkdir: no se puede crear el directorio '${dirName}': Ya existe o ruta inválida.`);
+                    this._appendOutput(`mkdir: cannot create directory '${dirName}': Already exists or invalid path.`);
                 }
                 break;
             case 'pwd':
@@ -249,13 +236,12 @@ export class TerminalApp extends App {
                 this._appendOutput(this.webOS.userSession.getCurrentUsername() || 'user');
                 break;
             default:
-                this._appendOutput(`${command}: comando no encontrado. Escribe 'help'.`);
+                this._appendOutput(`${command}: command not found. Type 'help'.`);
                 break;
         }
     }
 
     onClose() {
-        // Guardar el último path al cerrar, por si no se hizo en 'cd'
         this.webOS.userSession.setUserSetting('terminalLastPath', this.currentPath);
         super.onClose();
     }

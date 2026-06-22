@@ -1,9 +1,8 @@
-// js/apps/ChessApp.js
 import { App } from '../core/App.js';
 
 export class ChessApp extends App {
     constructor(webOS) {
-        super('chess', 'Ajedrez', 'fas fa-chess', webOS, {
+        super('chess', 'Chess', 'fas fa-chess', webOS, {
             window: { width: 520, height: 600, minWidth: 450, minHeight: 520, customClass: 'chess-app' },
             allowMultipleInstances: true
         });
@@ -12,7 +11,7 @@ export class ChessApp extends App {
         this.currentPlayer = 'white';
         this.selectedPiece = null;
         this.possibleMoves = [];
-        this.gameStatus = "Selecciona un modo de juego.";
+        this.gameStatus = "Select a game mode.";
         this.gameMode = null;
         this.aiPlayer = 'black';
         this.isAiThinking = false;
@@ -34,13 +33,13 @@ export class ChessApp extends App {
         contentElement.innerHTML = `
             <div class="chess-game">
                 <div class="chess-info">
-                    <button class="new-chess-game-button" title="Nuevo Juego"><i class="fas fa-redo"></i> Nuevo Juego</button>
+                    <button class="new-chess-game-button" title="New Game"><i class="fas fa-redo"></i> New Game</button>
                     <span class="chess-status">${this.gameStatus}</span>
                 </div>
                 <div class="chess-mode-selection">
                     <div class="chess-mode-header">
-                        <h2><i class="fas fa-chess"></i> Selecciona un modo de juego</h2>
-                        <p class="chess-mode-subheader">Elige cómo quieres jugar al ajedrez</p>
+                        <h2><i class="fas fa-chess"></i> Select a game mode</h2>
+                        <p class="chess-mode-subheader">Choose how you want to play chess</p>
                     </div>
                     <div class="chess-mode-options">
                         <div class="chess-mode-card" data-mode="1P">
@@ -48,9 +47,9 @@ export class ChessApp extends App {
                                 <i class="fas fa-robot"></i>
                                 <i class="fas fa-chess-pawn"></i>
                             </div>
-                            <h3>Un Jugador</h3>
-                            <p>Juega contra la IA</p>
-                            <button class="chess-mode-button" data-mode="1P">Seleccionar</button>
+                            <h3>One Player</h3>
+                            <p>Play against the AI</p>
+                            <button class="chess-mode-button" data-mode="1P">Select</button>
                         </div>
                         <div class="chess-mode-card" data-mode="2P">
                             <div class="chess-mode-icon">
@@ -58,9 +57,9 @@ export class ChessApp extends App {
                                 <i class="fas fa-chess-pawn"></i>
                                 <i class="fas fa-user"></i>
                             </div>
-                            <h3>Dos Jugadores</h3>
-                            <p>Juega contra un amigo</p>
-                            <button class="chess-mode-button" data-mode="2P">Seleccionar</button>
+                            <h3>Two Players</h3>
+                            <p>Play against a friend</p>
+                            <button class="chess-mode-button" data-mode="2P">Select</button>
                         </div>
                     </div>
                 </div>
@@ -90,7 +89,7 @@ export class ChessApp extends App {
         });
 
         this._showModeSelection();
-        windowInstance.setTitle("Ajedrez - Elige Modo");
+        windowInstance.setTitle("Chess - Choose Mode");
     }
 
     _showModeSelection() {
@@ -98,11 +97,11 @@ export class ChessApp extends App {
         this.gameMode = null;
         this.boardElement.style.display = 'none';
         this.modeSelectionElement.style.display = 'flex';
-        this.modeSelectionElement.style.flexDirection = 'column'; // Asegurar que esté presente
-        this.gameStatus = "Selecciona un modo de juego.";
+        this.modeSelectionElement.style.flexDirection = 'column';
+        this.gameStatus = "Select a game mode.";
         this.statusElement.textContent = this.gameStatus;
         this.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
-        this.activeWindowInstance.setTitle("Ajedrez - Elige Modo");
+        this.activeWindowInstance.setTitle("Chess - Choose Mode");
         this.selectedPiece = null;
         this.possibleMoves = [];
 
@@ -146,9 +145,8 @@ export class ChessApp extends App {
         this.isAiThinking = false;
         this._setupInitialBoard();
         this._renderBoard();
-        // Inicialmente, no hay jaque ni fin de juego, _updateStatus se encargará
-        this._updateStatus(); // Esto también llamará a _checkForEndGame para el primer turno
-        this.activeWindowInstance.setTitle(`Ajedrez - ${this.gameMode === '1P' ? 'vs IA' : '2 Jugadores'}`);
+        this._updateStatus();
+        this.activeWindowInstance.setTitle(`Chess - ${this.gameMode === '1P' ? 'vs AI' : '2 Players'}`);
     }
 
     _setupInitialBoard() {
@@ -234,7 +232,6 @@ export class ChessApp extends App {
                 this.possibleMoves = [];
                 this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
 
-                // Primero verifica si el juego terminó para el nuevo jugador, luego actualiza el estado
                 this._checkForEndGame(this.currentPlayer);
                 this._updateStatus();
                 this._renderBoard();
@@ -242,32 +239,29 @@ export class ChessApp extends App {
                 if (!this.gameOver && this.gameMode === '1P' && this.currentPlayer === this.aiPlayer) {
                     this._aiMove();
                 }
-            } else { // Clicked on another square (not a valid move for selected piece)
+            } else {
                 if (pieceCode && this._getPieceColor(pieceCode) === this.currentPlayer) {
-                    // Select this new piece of the current player
                     this.selectedPiece = { piece: pieceCode, color: this.currentPlayer, row: r, col: c };
                     const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, this.board);
                     this.possibleMoves = rawMoves.filter(move => {
                         const tempBoard = this.board.map(arr => arr.slice());
-                        this._movePiece(r, c, move.r, move.c, tempBoard); // Simulate move
-                        return !this._isKingInCheck(this.currentPlayer, tempBoard); // Check if own king is safe
+                        this._movePiece(r, c, move.r, move.c, tempBoard);
+                        return !this._isKingInCheck(this.currentPlayer, tempBoard);
                     });
                 } else {
-                    // Clicked on empty or opponent's piece: deselect
                     this.selectedPiece = null;
                     this.possibleMoves = [];
                 }
                 this._renderBoard();
             }
-        } else { // No piece selected yet
+        } else {
             if (pieceCode && this._getPieceColor(pieceCode) === this.currentPlayer) {
                 this.selectedPiece = { piece: pieceCode, color: this.currentPlayer, row: r, col: c };
                 const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, this.board);
-                // Filter raw moves to get only legal ones (that don't leave own king in check)
                 this.possibleMoves = rawMoves.filter(move => {
                     const tempBoard = this.board.map(arr => arr.slice());
-                    this._movePiece(r, c, move.r, move.c, tempBoard); // Simulate move
-                    return !this._isKingInCheck(this.currentPlayer, tempBoard); // Check if own king is safe
+                    this._movePiece(r, c, move.r, move.c, tempBoard);
+                    return !this._isKingInCheck(this.currentPlayer, tempBoard);
                 });
                 this._renderBoard();
             }
@@ -279,7 +273,6 @@ export class ChessApp extends App {
         boardState[toRow][toCol] = pieceToMove;
         boardState[fromRow][fromCol] = null;
 
-        // Promoción de peón
         if (pieceToMove === 'P' && toRow === 0) boardState[toRow][toCol] = 'Q';
         if (pieceToMove === 'p' && toRow === 7) boardState[toRow][toCol] = 'q';
     }
@@ -292,15 +285,12 @@ export class ChessApp extends App {
         if (type === 'p') {
             const direction = pieceColor === 'white' ? -1 : 1;
             const startRow = pieceColor === 'white' ? 6 : 1;
-            // Avance normal
             if (this._isValidSquare(r + direction, c) && boardState[r + direction][c] === null) {
                 moves.push({ r: r + direction, c: c });
-                // Doble avance desde la posición inicial
                 if (r === startRow && this._isValidSquare(r + 2 * direction, c) && boardState[r + 2 * direction][c] === null) {
                     moves.push({ r: r + 2 * direction, c: c });
                 }
             }
-            // Capturas
             const captureOffsets = [-1, 1];
             for (const offset of captureOffsets) {
                 const captureR = r + direction;
@@ -312,15 +302,15 @@ export class ChessApp extends App {
                 }
             }
         }
-        if (type === 'r' || type === 'q') { // Torre o Reina (movimientos rectos)
+        if (type === 'r' || type === 'q') {
             const directions = [{dr:0,dc:1},{dr:0,dc:-1},{dr:1,dc:0},{dr:-1,dc:0}];
             this._addLinearMovesToBoard(moves, r, c, pieceColor, directions, boardState);
         }
-        if (type === 'b' || type === 'q') { // Alfil o Reina (movimientos diagonales)
+        if (type === 'b' || type === 'q') {
             const directions = [{dr:1,dc:1},{dr:1,dc:-1},{dr:-1,dc:1},{dr:-1,dc:-1}];
             this._addLinearMovesToBoard(moves, r, c, pieceColor, directions, boardState);
         }
-        if (type === 'n') { // Caballo
+        if (type === 'n') {
             const knightMoves = [
                 {dr: -2, dc: -1}, {dr: -2, dc: 1}, {dr: -1, dc: -2}, {dr: -1, dc: 2},
                 {dr: 1, dc: -2}, {dr: 1, dc: 2}, {dr: 2, dc: -1}, {dr: 2, dc: 1}
@@ -333,7 +323,7 @@ export class ChessApp extends App {
                 }
             });
         }
-        if (type === 'k') { // Rey
+        if (type === 'k') {
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     if (dr === 0 && dc === 0) continue;
@@ -358,9 +348,9 @@ export class ChessApp extends App {
                     moves.push({r:nr, c:nc});
                 } else {
                     if(this._getPieceColor(boardState[nr][nc]) !== pieceColor) {
-                        moves.push({r:nr, c:nc}); // Puede capturar
+                        moves.push({r:nr, c:nc});
                     }
-                    break; // Bloqueado por pieza propia o enemiga
+                    break;
                 }
             }
         }
@@ -368,17 +358,16 @@ export class ChessApp extends App {
 
     _isKingInCheck(playerColor, boardState) {
         const kingPos = this._findKing(playerColor, boardState);
-        if (!kingPos) return false; // No hay rey, algo raro (o ya capturado, que no debería pasar)
+        if (!kingPos) return false;
 
         const opponentColor = playerColor === 'white' ? 'black' : 'white';
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 const pieceCode = boardState[r][c];
                 if (pieceCode && this._getPieceColor(pieceCode) === opponentColor) {
-                    // Obtenemos los movimientos "brutos" de la pieza oponente (sin filtrar por la seguridad de su propio rey)
                     const opponentRawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, boardState);
                     if (opponentRawMoves.some(move => move.r === kingPos.r && move.c === kingPos.c)) {
-                        return true; // El rey está atacado
+                        return true;
                     }
                 }
             }
@@ -395,8 +384,8 @@ export class ChessApp extends App {
                     const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, boardState);
                     for (const move of rawMoves) {
                         const tempBoard = boardState.map(arr => arr.slice());
-                        this._movePiece(r, c, move.r, move.c, tempBoard); // Simular el movimiento
-                        if (!this._isKingInCheck(playerColor, tempBoard)) { // Si el rey NO está en jaque después del movimiento
+                        this._movePiece(r, c, move.r, move.c, tempBoard);
+                        if (!this._isKingInCheck(playerColor, tempBoard)) {
                             legalMoves.push({ from: {r, c, piece:pieceCode}, to: {r: move.r, c: move.c} });
                         }
                     }
@@ -407,57 +396,50 @@ export class ChessApp extends App {
     }
 
     _checkForEndGame(playerWhoseTurnItIs) {
-        // No hacer nada si el juego ya terminó
         if (this.gameOver) return true;
 
         const legalMoves = this._getAllLegalMovesForPlayer(playerWhoseTurnItIs, this.board);
         if (legalMoves.length === 0) {
             this.gameOver = true;
             if (this._isKingInCheck(playerWhoseTurnItIs, this.board)) {
-                this.gameStatus = `¡Jaque Mate! Ganan las ${playerWhoseTurnItIs === 'white' ? 'Negras' : 'Blancas'}.`;
+                this.gameStatus = `Checkmate! ${playerWhoseTurnItIs === 'white' ? 'Black' : 'White'} wins.`;
                 if(this.statusElement) {
                     this.statusElement.classList.add('check-mate-status');
-                    this.statusElement.classList.remove('check-status'); // Quitar jaque normal si es mate
+                    this.statusElement.classList.remove('check-status');
                 }
             } else {
-                this.gameStatus = "¡Ahogado! Empate.";
+                this.gameStatus = "Stalemate! Draw.";
                  if(this.statusElement) this.statusElement.classList.add('stalemate-status');
             }
-            return true; // Juego terminado
+            return true;
         }
-        return false; // Juego continúa
+        return false;
     }
 
     _updateStatus() {
         if (!this.statusElement) return;
 
-        // Si el juego ha terminado, _checkForEndGame ya estableció this.gameStatus
         if (this.gameOver) {
             this.statusElement.textContent = this.gameStatus;
-            // Las clases de estado (mate, ahogado) ya se aplican en _checkForEndGame
             return;
         }
 
-        // Si el juego continúa
-        let turnMessage = `Turno de las ${this.currentPlayer === 'white' ? 'Blancas' : 'Negras'}.`;
+        let turnMessage = `${this.currentPlayer === 'white' ? 'White' : 'Black'} to move.`;
 
-        // Verificar que el tablero esté inicializado antes de comprobar jaque
-        // y que el juego no haya terminado ya (aunque el if de arriba debería cubrirlo)
         if (this.board && Array.isArray(this.board) && this.board.length === 8 && !this.gameOver) {
             const kingCurrentlyInCheck = this._isKingInCheck(this.currentPlayer, this.board);
 
             if (kingCurrentlyInCheck) {
-                this.gameStatus = `¡Jaque! ${turnMessage}`;
+                this.gameStatus = `Check! ${turnMessage}`;
                 this.statusElement.classList.add('check-status');
                 this.statusElement.classList.remove('check-mate-status', 'stalemate-status');
             } else {
                 this.gameStatus = turnMessage;
                 this.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
             }
-        } else if (!this.gameOver) { // Si el tablero no está listo pero el juego no ha terminado (ej. al inicio)
+        } else if (!this.gameOver) {
             this.gameStatus = turnMessage;
         }
-        // Si this.gameOver es true, this.gameStatus ya fue establecido por _checkForEndGame
         this.statusElement.textContent = this.gameStatus;
     }
 
@@ -465,35 +447,26 @@ export class ChessApp extends App {
         if (this.gameOver || this.currentPlayer !== this.aiPlayer || this.isAiThinking) return;
 
         this.isAiThinking = true;
-        this.statusElement.textContent = `IA (${this.aiPlayer === 'white' ? 'Blancas' : 'Negras'}) está pensando...`;
+        this.statusElement.textContent = `AI (${this.aiPlayer === 'white' ? 'White' : 'Black'}) is thinking...`;
         this.selectedPiece = null;
         this.possibleMoves = [];
-        this._renderBoard(); // Actualizar tablero para quitar resaltados del humano
+        this._renderBoard();
 
         setTimeout(() => {
-            // Obtener solo movimientos legales para la IA
             const legalMoves = this._getAllLegalMovesForPlayer(this.aiPlayer, this.board);
 
             if (legalMoves.length === 0) {
-                // Esto ya debería haber sido manejado por _checkForEndGame después del turno del humano,
-                // resultando en jaque mate o ahogado para la IA.
-                console.log("IA no tiene movimientos legales. El juego ya debería haber terminado.");
+                console.log("AI has no legal moves. The game should have already ended.");
                 this.isAiThinking = false;
-                // _checkForEndGame y _updateStatus ya deberían haber reflejado el estado final.
                 return;
             }
 
             let bestMove = null;
 
-            // 1. Si está en jaque, cualquier movimiento legal lo sacará del jaque.
-            // No es necesario un bloque if específico aquí, ya que legalMoves solo contiene esos.
-
-            // 2. Intentar dar Jaque Mate (simplificado: solo dar Jaque)
             let checkingMove = null;
             for (const move of legalMoves) {
                 const tempBoard = this.board.map(arr => arr.slice());
                 this._movePiece(move.from.r, move.from.c, move.to.r, move.to.c, tempBoard);
-                // El oponente es el jugador que no es la IA
                 const opponentColor = this.aiPlayer === 'white' ? 'black' : 'white';
                 if (this._isKingInCheck(opponentColor, tempBoard)) {
                     checkingMove = move;
@@ -503,11 +476,10 @@ export class ChessApp extends App {
             if (checkingMove) {
                 bestMove = checkingMove;
             } else {
-                // 3. Capturar la pieza de mayor valor
                 let highValueCapture = null;
                 let highestValue = -1;
                 for (const move of legalMoves) {
-                    const targetPieceCode = this.board[move.to.r][move.to.c]; // Pieza en la casilla de destino ANTES del movimiento
+                    const targetPieceCode = this.board[move.to.r][move.to.c];
                     if (targetPieceCode) {
                         const value = this.pieceValues[targetPieceCode.toLowerCase()] || 0;
                         if (value > highestValue) {
@@ -519,7 +491,6 @@ export class ChessApp extends App {
                 if (highValueCapture) {
                     bestMove = highValueCapture;
                 } else {
-                    // 4. Movimiento aleatorio si no hay nada mejor
                     bestMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
                 }
             }
@@ -527,8 +498,7 @@ export class ChessApp extends App {
             if (bestMove) {
                 this._movePiece(bestMove.from.r, bestMove.from.c, bestMove.to.r, bestMove.to.c);
             } else {
-                 // Esto no debería ocurrir si legalMoves.length > 0
-                console.error("IA no pudo seleccionar un movimiento a pesar de tener opciones.");
+                console.error("AI could not select a move despite having options.");
                 this.isAiThinking = false;
                 return;
             }
@@ -536,7 +506,7 @@ export class ChessApp extends App {
             this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
             this.isAiThinking = false;
 
-            this._checkForEndGame(this.currentPlayer); // Comprobar si el humano está en mate/ahogado
+            this._checkForEndGame(this.currentPlayer);
             this._updateStatus();
             this._renderBoard();
 

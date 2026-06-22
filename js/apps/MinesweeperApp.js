@@ -1,13 +1,11 @@
-// js/apps/MinesweeperApp.js
 import { App } from '../core/App.js';
 
 export class MinesweeperApp extends App {
     constructor(webOS) {
-        super('minesweeper', 'Buscaminas', 'fas fa-bomb', webOS, {
+        super('minesweeper', 'Minesweeper', 'fas fa-bomb', webOS, {
             window: { width: 400, height: 480, minWidth: 300, minHeight: 350, customClass: 'minesweeper-app' },
             allowMultipleInstances: true
         });
-        // Configuraciones del juego (pueden ser ajustables por el usuario en el futuro)
         this.rows = 10;
         this.cols = 10;
         this.mines = 15;
@@ -20,7 +18,6 @@ export class MinesweeperApp extends App {
         this.timerInterval = null;
         this.secondsElapsed = 0;
 
-        // Elementos del DOM que se asignarán en renderContent
         this.boardElement = null;
         this.statusElement = null;
         this.timerElement = null;
@@ -32,16 +29,15 @@ export class MinesweeperApp extends App {
         contentElement.innerHTML = `
             <div class="minesweeper-game">
                 <div class="game-info">
-                    <button class="new-game-button" title="Nuevo Juego"><i class="fas fa-redo"></i> Nuevo Juego</button>
+                    <button class="new-game-button" title="New Game"><i class="fas fa-redo"></i> New Game</button>
                     <div class="info-panel">
-                        <span><i class="fas fa-flag"></i> Minas: <span class="mines-left">${this.mines}</span></span>
-                        <span><i class="fas fa-clock"></i> Tiempo: <span class="timer">0</span>s</span>
+                        <span><i class="fas fa-flag"></i> Mines: <span class="mines-left">${this.mines}</span></span>
+                        <span><i class="fas fa-clock"></i> Time: <span class="timer">0</span>s</span>
                     </div>
                 </div>
                 <div class="game-board">
-                    <!-- Las celdas se generarán aquí -->
                 </div>
-                <div class="game-status">¡Haz clic para empezar!</div>
+                <div class="game-status">Click to start!</div>
             </div>
         `;
 
@@ -55,8 +51,8 @@ export class MinesweeperApp extends App {
         this.boardElement.addEventListener('click', (e) => this._handleCellClick(e));
         this.boardElement.addEventListener('contextmenu', (e) => this._handleCellRightClick(e));
 
-        this.resetGame(); // Iniciar un nuevo juego al renderizar
-        windowInstance.setTitle("Buscaminas");
+        this.resetGame();
+        windowInstance.setTitle("Minesweeper");
     }
 
     resetGame() {
@@ -69,8 +65,8 @@ export class MinesweeperApp extends App {
         if (this.timerInterval) clearInterval(this.timerInterval);
         this.timerElement.textContent = '0';
         this.minesLeftElement.textContent = this.mines;
-        this.statusElement.textContent = '¡Haz clic para empezar!';
-        this.statusElement.className = 'game-status'; // Reset class
+        this.statusElement.textContent = 'Click to start!';
+        this.statusElement.className = 'game-status';
 
         this._createBoard();
         this._renderBoard();
@@ -99,7 +95,6 @@ export class MinesweeperApp extends App {
         while (minesToPlace > 0) {
             const r = Math.floor(Math.random() * this.rows);
             const c = Math.floor(Math.random() * this.cols);
-            // No colocar mina en el primer clic o en una celda ya con mina
             if ((r === firstClickRow && c === firstClickCol) || this.board[r][c].isMine) {
                 continue;
             }
@@ -107,7 +102,6 @@ export class MinesweeperApp extends App {
             minesToPlace--;
         }
 
-        // Calcular minas adyacentes
         for (let r = 0; r < this.rows; r++) {
             for (let c = 0; c < this.cols; c++) {
                 if (this.board[r][c].isMine) continue;
@@ -171,12 +165,12 @@ export class MinesweeperApp extends App {
             this._placeMines(r,c);
             this._startTimer();
             this.firstClick = false;
-            this.statusElement.textContent = '¡Juego en curso!';
+            this.statusElement.textContent = 'Game in progress!';
         }
 
         if (cell.isMine) {
-            this._gameOver(false); // false = perdiste
-            cell.isRevealed = true; // Revelar la mina clickeada
+            this._gameOver(false);
+            cell.isRevealed = true;
         } else {
             this._revealCell(r, c);
             this._checkWinCondition();
@@ -186,7 +180,7 @@ export class MinesweeperApp extends App {
 
     _handleCellRightClick(e) {
         e.preventDefault();
-        if (this.gameOver || this.firstClick) return; // No se pueden poner banderas antes del primer clic
+        if (this.gameOver || this.firstClick) return;
 
         const cellEl = e.target.closest('.cell');
         if (!cellEl) return;
@@ -205,8 +199,8 @@ export class MinesweeperApp extends App {
                 cell.isFlagged = true;
                 this.flagsPlaced++;
             } else {
-                this.statusElement.textContent = '¡No más banderas!';
-                setTimeout(() => { if(!this.gameOver) this.statusElement.textContent = '¡Juego en curso!'; }, 2000);
+                this.statusElement.textContent = 'No more flags!';
+                setTimeout(() => { if(!this.gameOver) this.statusElement.textContent = 'Game in progress!'; }, 2000);
             }
         }
         this.minesLeftElement.textContent = this.mines - this.flagsPlaced;
@@ -216,13 +210,12 @@ export class MinesweeperApp extends App {
     _revealCell(r, c) {
         if (r < 0 || r >= this.rows || c < 0 || c >= this.cols) return;
         const cell = this.board[r][c];
-        if (cell.isRevealed || cell.isFlagged || cell.isMine) return; // No revelar minas aquí, eso es _gameOver
+        if (cell.isRevealed || cell.isFlagged || cell.isMine) return;
 
         cell.isRevealed = true;
         this.revealedCells++;
 
         if (cell.adjacentMines === 0) {
-            // Revelar recursivamente celdas adyacentes si esta celda no tiene minas cerca
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     if (dr === 0 && dc === 0) continue;
@@ -236,24 +229,21 @@ export class MinesweeperApp extends App {
         this.gameOver = true;
         clearInterval(this.timerInterval);
         if (won) {
-            this.statusElement.textContent = '¡Ganaste!';
+            this.statusElement.textContent = 'You won!';
             this.statusElement.className = 'game-status win';
-            // Revelar todas las minas con banderas (o marcar minas no flaggeadas)
         } else {
-            this.statusElement.textContent = '¡Perdiste! Mina encontrada.';
+            this.statusElement.textContent = 'You lost! Mine found.';
             this.statusElement.className = 'game-status lose';
-            // Revelar todas las minas
             this.board.forEach(row => row.forEach(cell => {
                 if (cell.isMine) cell.isRevealed = true;
             }));
         }
-        // this._renderBoard(); // Se llama desde _handleCellClick o se puede llamar aquí
     }
 
     _checkWinCondition() {
         const totalNonMineCells = this.rows * this.cols - this.mines;
         if (this.revealedCells === totalNonMineCells) {
-            this._gameOver(true); // true = ganaste
+            this._gameOver(true);
         }
     }
 

@@ -1,4 +1,3 @@
-// js/Desktop.js
 import { App } from '../core/App.js';
 
 export class Desktop extends App {
@@ -13,10 +12,8 @@ export class Desktop extends App {
     }
 
     initDesktop() {
-        // Establecer el fondo de pantalla actual
         this._setWallpaper(this.wallpapers[this.currentWallpaperIndex]);
 
-        // Inicializar los iconos y otras configuraciones del escritorio
         this._initIcons();
         this._initTaskbar();
     }
@@ -28,15 +25,12 @@ export class Desktop extends App {
     }
 
     _initIcons() {
-        // Lógica para inicializar los iconos del escritorio
     }
 
     _initTaskbar() {
-        // Lógica para inicializar la barra de tareas
     }
 
     onClose() {
-        // Limpiar intervalos, eventos, etc.
         super.onClose();
     }
 }

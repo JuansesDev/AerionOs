@@ -1,5 +1,3 @@
-// js/core/FileSystem.js
-// (Prácticamente igual que en la respuesta anterior, asegúrate de exportar la clase)
 export class FileSystem {
     constructor(username) {
         this.username = username;
@@ -14,7 +12,7 @@ export class FileSystem {
             return storedFS ? JSON.parse(storedFS) : {};
         } catch (e) {
             console.error("Error parsing FileSystem from localStorage", e);
-            return {}; // Return empty FS on error
+            return {};
         }
     }
 
@@ -23,7 +21,7 @@ export class FileSystem {
             localStorage.setItem(this.storageKey, JSON.stringify(this.fs));
         } catch (e) {
             console.error("Error saving FileSystem to localStorage", e);
-            alert("Error: No se pudo guardar el sistema de archivos. ¿LocalStorage lleno?");
+            alert("Error: Could not save the file system. Is LocalStorage full?");
         }
     }
 
@@ -36,30 +34,26 @@ export class FileSystem {
         const baseFolders = ['Desktop', 'Documents', 'Pictures', 'Downloads', 'Music', 'Videos'];
         baseFolders.forEach(folderName => {
             const folderPath = `/${folderName}`;
-            if (!this._resolvePath(folderPath)) { // More robust check
-                 this.createDirectory(folderPath, true); // silent = true to avoid recursion issues here
+            if (!this._resolvePath(folderPath)) {
+                 this.createDirectory(folderPath, true);
                  changed = true;
             }
         });
         if (changed) this._saveFS();
     }
 
-    // Normaliza una ruta eliminando barras múltiples y resolviendo referencias relativas
     _normalizePath(path) {
         if (!path || path === '/') return '/';
-        
-        // Asegurar que comience con '/'
+
         if (!path.startsWith('/')) {
             path = '/' + path;
         }
-        
-        // Dividir por '/' y filtrar elementos vacíos
+
         const parts = path.split('/').filter(p => p && p !== '.');
         const normalized = [];
-        
+
         for (const part of parts) {
             if (part === '..') {
-                // Ir al directorio padre (eliminar último elemento si existe)
                 if (normalized.length > 0) {
                     normalized.pop();
                 }
@@ -67,7 +61,7 @@ export class FileSystem {
                 normalized.push(part);
             }
         }
-        
+
         return normalized.length === 0 ? '/' : '/' + normalized.join('/');
     }
 
@@ -82,7 +76,7 @@ export class FileSystem {
             if (current && current.type === 'folder' && current.children) {
                 if (current.children[part]) {
                     current = current.children[part];
-                } else if (createIntermediate && i < parts.length -1) { // Only create intermediate if not the last part
+                } else if (createIntermediate && i < parts.length -1) {
                     current.children[part] = { type: 'folder', name: part, children: {}, meta: { createdAt: Date.now(), modifiedAt: Date.now() } };
                     current = current.children[part];
                 }
@@ -108,7 +102,7 @@ export class FileSystem {
     listDirectory(path) {
         const node = this._resolvePath(path);
         if (node && node.type === 'folder') {
-             return Object.values(node.children || {}).map(child => ({ // Handle empty children
+             return Object.values(node.children || {}).map(child => ({
                 name: child.name,
                 type: child.type,
                 size: child.meta?.size || 0,
@@ -130,20 +124,16 @@ export class FileSystem {
     writeFile(path, content) {
         const normalizedPath = this._normalizePath(path);
         const { parentNode, name } = this._getParentNodeAndName(normalizedPath);
-        
+
         if (!parentNode) {
-            // Intentar crear los directorios intermedios
             const pathParts = normalizedPath.split('/').filter(p => p);
-            if (pathParts.length === 0) return false; // No se puede escribir en la raíz
-            
-            // Quitar el nombre del archivo para obtener el directorio padre
+            if (pathParts.length === 0) return false;
+
             const fileName = pathParts.pop();
             const parentDir = pathParts.length > 0 ? '/' + pathParts.join('/') : '/';
-            
-            // Crear directorios intermedios si no existen
+
             this._createDirectoriesRecursively(parentDir);
-            
-            // Intentar nuevamente
+
             const { parentNode: newParentNode, name: newName } = this._getParentNodeAndName(normalizedPath);
             if (newParentNode && newParentNode.type === 'folder' && newName) {
                 const existingNode = newParentNode.children[newName];
@@ -180,16 +170,15 @@ export class FileSystem {
         return false;
     }
 
-    // Método auxiliar para crear directorios recursivamente
     _createDirectoriesRecursively(path) {
         const normalizedPath = this._normalizePath(path);
         if (normalizedPath === '/' || this.pathExists(normalizedPath)) {
-            return true; // Ya existe o es la raíz
+            return true;
         }
-        
+
         const parts = normalizedPath.split('/').filter(p => p);
         let currentPath = '';
-        
+
         for (const part of parts) {
             currentPath += '/' + part;
             if (!this.pathExists(currentPath)) {
@@ -209,7 +198,7 @@ export class FileSystem {
                 meta: { createdAt: Date.now(), modifiedAt: Date.now() }
             };
             parentNode.meta.modifiedAt = Date.now();
-            if (!silent) this._saveFS(); // Save only if not silent (used by _ensureBaseStructure)
+            if (!silent) this._saveFS();
             return true;
         }
         return false;
@@ -227,7 +216,6 @@ export class FileSystem {
     }
 
     rename(oldPath, newName) {
-        // Validate newName: no slashes, not empty
         if (!newName || newName.includes('/') || newName.includes('\\')) {
             console.error("Invalid new name for rename operation.");
             return false;
@@ -256,7 +244,7 @@ export class FileSystem {
                 name: node.name,
                 type: node.type,
                 meta: node.meta,
-                content: node.type === 'file' ? node.content : undefined, // Include content for files
+                content: node.type === 'file' ? node.content : undefined,
                 childrenCount: node.type === 'folder' ? Object.keys(node.children || {}).length : undefined
             };
         }

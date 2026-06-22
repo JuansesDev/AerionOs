@@ -1,13 +1,9 @@
-// js/core/ContextMenu.js
-// Clase ContextMenu: Implementa menús contextuales personalizados en el sistema
 export class ContextMenu {
     constructor(webOS) {
         this.webOS = webOS;
         this.element = null;
 
-        // Configuración de event listeners globales
         document.addEventListener('click', (event) => {
-            // Verificar si el clic está en el widget del reloj para evitar cerrar el menú
             if (this.webOS.taskbar && this.webOS.taskbar.clockCalendarWidget) {
                 if (this.webOS.taskbar.clockCalendarWidget.element.contains(event.target) ||
                     (this.webOS.taskbar.clockCalendarWidget.triggerElement &&
@@ -18,10 +14,7 @@ export class ContextMenu {
             this.hide();
         }, true);
         document.addEventListener('contextmenu', (e) => {
-            // If the context menu itself is right-clicked, don't immediately hide it
-            // (or rather, let the new one replace it if it's a different context menu trigger)
             if (this.element && this.element.contains(e.target)) {
-                // Allow context menu on the context menu itself (e.g., for browser dev tools)
             } else {
                 this.hide();
             }
@@ -31,7 +24,6 @@ export class ContextMenu {
         }, true);
     }
 
-    // Crea el DOM del menú contextual en las coordenadas especificadas
     _createDOM(x, y, items) {
         this.hide();
 
@@ -69,7 +61,7 @@ export class ContextMenu {
         this.element = menuEl;
 
         const rect = menuEl.getBoundingClientRect();
-        const margin = 5; // Small margin from window edge
+        const margin = 5;
         if (rect.right > window.innerWidth - margin) {
             menuEl.style.left = `${window.innerWidth - rect.width - margin}px`;
         }
@@ -84,16 +76,13 @@ export class ContextMenu {
         }
     }
 
-    // Muestra el menú contextual en las coordenadas especificadas
     show(x, y, items) {
         if (!items || items.length === 0) return;
-        // Request animation frame to ensure any previous menu is hidden and DOM is updated
         requestAnimationFrame(() => {
             this._createDOM(x, y, items);
         });
     }
 
-    // Oculta el menú contextual
     hide() {
         if (this.element) {
             this.element.remove();

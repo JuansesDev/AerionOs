@@ -1,4 +1,3 @@
-// Clase App: Base para todas las aplicaciones del sistema
 import { EventEmittable } from './EventEmittable.js';
 
 export class App extends EventEmittable {
@@ -10,35 +9,34 @@ export class App extends EventEmittable {
         this.webOS = webOS;
         this.options = {
             allowMultipleInstances: false,
-            window: {}, // Opciones predeterminadas de ventana
+            window: {},
             ...options
         };
-        this.instances = []; // Almacena instancias de ventanas para esta app
+        this.instances = [];
     }
 
-    // Lanza la aplicación, creando una nueva instancia o reutilizando una existente
-    launch(launchOptions = {}) { // launchOptions can be e.g. { filePathToOpen: '...' }
+    launch(launchOptions = {}) {
         if (!this.options.allowMultipleInstances && this.instances.length > 0) {
-            const winToFocus = this.instances[0]; // Focus the first (and only) instance
+            const winToFocus = this.instances[0];
             if (winToFocus.isMinimized) {
                 winToFocus.restore();
             } else {
                 winToFocus.bringToFront();
             }
-            this.onRelaunch(winToFocus, launchOptions); // Call a method for already running app
+            this.onRelaunch(winToFocus, launchOptions);
             return winToFocus;
         }
 
         const windowOptions = {
-            ...this.options.window, // App's default window options
-            customClass: `${this.id}-app` // Add app-specific class to window
+            ...this.options.window,
+            customClass: `${this.id}-app`
         };
 
         const newWindow = this.webOS.windowManager.createWindow(
             this.id,
             this.name,
             this.iconClass,
-            windowOptions // Pass merged window options
+            windowOptions
         );
 
         this.instances.push(newWindow);
@@ -49,28 +47,21 @@ export class App extends EventEmittable {
         return newWindow;
     }
 
-    // Renderiza el contenido de la aplicación (a implementar por subclases)
     renderContent(contentElement, windowInstance, launchOptions) {
-        // Implementación base que las subclases deben sobrescribir
-        contentElement.innerHTML = `<p style="padding:20px;">Contenido para ${this.name}.</p>`;
+        contentElement.innerHTML = `<p style="padding:20px;">Content for ${this.name}.</p>`;
     }
 
-    // Maneja el relanzamiento cuando la app ya está en ejecución
     onRelaunch(windowInstance, launchOptions) {
-        // Called when app is launched but already running (and !allowMultipleInstances)
-        // Subclasses can override this to handle new data (e.g., open another file in existing editor)
         console.log(`${this.name} relaunched. Options:`, launchOptions);
     }
 
-    // Gestiona el cierre de una instancia de la aplicación
     _handleInstanceClose(closedWindow) {
         this.instances = this.instances.filter(inst => inst !== closedWindow);
         if (this.instances.length === 0) {
-            this.emit('allInstancesClosed', this); // App fully closed
+            this.emit('allInstancesClosed', this);
         }
     }
 
-    // Obtiene la ventana principal si solo se permite una instancia
     getMainWindow() {
         return this.instances.length > 0 ? this.instances[0] : null;
     }
