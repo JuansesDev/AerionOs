@@ -1,6 +1,6 @@
 # AerionOS - Web OS Simulator (Beta)
 
-![AerionOS Desktop](https://res.cloudinary.com/dvrqgxoqf/image/upload/v1747691727/auraos_jf7szq.png)
+![AerionOS Desktop](public/aerionos-desktop.png)
 
 AerionOS is an interactive desktop operating system simulation that runs entirely in your browser, built with **HTML, CSS and JavaScript (ES6+ Modules)**. This project, currently in **Beta**, serves as a portfolio piece to showcase the creation of complex interfaces and modular web applications.
 
