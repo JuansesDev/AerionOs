@@ -1,4 +1,3 @@
-/* styles/drawing-app.css */
 .drawing-app {
     display: flex;
     flex-direction: column;
@@ -6,85 +5,166 @@
     background: #f0f0f0;
 }
 
-.toolbar {
-    padding: 8px;
-    background: #e0e0e0;
+.drawing-app .toolbar {
+    padding: 6px 8px;
+    background: #e8e8e8;
     border-bottom: 1px solid #ccc;
     display: flex;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
     align-items: center;
 }
 
-.tool-btn {
-    padding: 6px 12px;
-    border: 1px solid #999;
+.drawing-app .tool-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-right: 6px;
+    border-right: 1px solid #ccc;
+}
+
+.drawing-app .tool-group:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+.drawing-app .tool-group.right {
+    margin-left: auto;
+}
+
+.drawing-app .tool-btn,
+.drawing-app .action-btn {
+    width: 32px;
+    height: 30px;
+    border: 1px solid #aaa;
     background: #fff;
     cursor: pointer;
     border-radius: 4px;
     display: flex;
     align-items: center;
-    gap: 4px;
-    transition: background-color 0.2s, border-color 0.2s;
+    justify-content: center;
+    color: #333;
+    transition: background-color 0.15s, border-color 0.15s;
 }
 
-.tool-btn.active {
+.drawing-app .tool-btn:hover,
+.drawing-app .action-btn:hover {
+    background: #eaf3fb;
+    border-color: #0078d7;
+}
+
+.drawing-app .tool-btn.active {
     background: #0078d7;
-    color: white;
+    color: #fff;
     border-color: #005a9e;
 }
 
-.tool-btn:hover {
-    background: #e5e5e5;
+.drawing-app .action-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+    background: #fff;
+    border-color: #aaa;
 }
 
-.tool-btn.active:hover {
-    background: #106ebe;
+.drawing-app .brush-sizes {
+    font-size: 12px;
+    color: #444;
 }
 
-.color-picker {
-    width: 40px;
+.drawing-app .size-btn {
+    width: 30px;
     height: 30px;
-    padding: 0;
-    border: 1px solid #999;
+    border: 1px solid #aaa;
+    background: #fff;
     border-radius: 4px;
     cursor: pointer;
-}
-
-.brush-size-container {
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-size: 12px;
+    justify-content: center;
 }
 
-#brush-size {
+.drawing-app .size-btn span {
+    background: #333;
+    border-radius: 50%;
+    display: block;
+}
+
+.drawing-app .size-btn.active {
+    background: #d0e7fb;
+    border-color: #0078d7;
+}
+
+.drawing-app #brush-size {
     width: 80px;
 }
 
-#brush-size-value {
-    width: 30px;
+.drawing-app #brush-size-value {
+    width: 32px;
     text-align: center;
 }
 
-.clear-btn {
-    margin-left: auto;
-    padding: 4px 8px;
-    background: #ff6b6b;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+.drawing-app .palette {
     display: flex;
     align-items: center;
-    gap: 4px;
-    transition: background-color 0.2s;
+    gap: 10px;
+    padding: 6px 8px;
+    background: #e8e8e8;
+    border-bottom: 1px solid #ccc;
 }
 
-.clear-btn:hover {
-    background: #e74c3c;
+.drawing-app .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    max-width: 220px;
 }
 
-.canvas-container {
+.drawing-app .swatch {
+    width: 18px;
+    height: 18px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.drawing-app .swatch.active {
+    outline: 2px solid #0078d7;
+    outline-offset: 1px;
+}
+
+.drawing-app .custom-color {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border: 1px dashed #888;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #555;
+    overflow: hidden;
+}
+
+.drawing-app .custom-color input[type="color"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+}
+
+.drawing-app .current-color-preview {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    border: 1px solid #aaa;
+    box-shadow: inset 0 0 0 2px #fff;
+}
+
+.drawing-app .canvas-container {
     flex: 1;
     overflow: hidden;
     position: relative;
@@ -92,15 +172,13 @@
     border: 1px solid #ddd;
 }
 
-#drawing-canvas {
+.drawing-app #drawing-canvas {
     display: block;
     background: white;
-    width: 100%;
-    height: 100%;
     cursor: crosshair;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
 }
 
-/* Estilos específicos para la ventana de la aplicación de dibujo */
 .drawing-app-window .window-content {
     padding: 0;
     overflow: hidden;
