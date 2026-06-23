@@ -43,17 +43,15 @@ class WebOS {
         this.desktop = null;
         this.taskbar = null;
         this.startMenu = null;
-        this.authScreen = new AuthScreen(this.container, this.userSession);
+        this.defaultUsername = 'AerionOsUser';
+        this.authScreen = new AuthScreen(this.container, this.userSession, this.defaultUsername);
 
         this.apps = {};
 
         this._bindSessionEvents();
 
-        if (this.userSession.isAuthenticated()) {
-            this._onLogin(this.userSession.currentUser);
-        } else {
-            this._autoLoginDefaultUser();
-        }
+        this._ensureDefaultUser();
+        this.authScreen.show();
     }
 
     _bindSessionEvents() {
@@ -145,25 +143,17 @@ class WebOS {
         }
     }
 
-    _autoLoginDefaultUser() {
-        const defaultUsername = 'AerionOsUser';
-
+    _ensureDefaultUser() {
         const users = JSON.parse(localStorage.getItem('aerionOS_users') || '{}');
-        if (!users[defaultUsername]) {
-            const result = this.userSession.register(defaultUsername);
-            if (result.success) {
-                console.log('Default user created and automatically logged in');
-            } else {
-                console.error('Error creating default user:', result.message);
-            }
-        } else {
-            const success = this.userSession.login(defaultUsername);
-            if (success) {
-                console.log('Automatic login with default user successful');
-            } else {
-                console.error('Error during automatic login');
-            }
+        if (!users[this.defaultUsername]) {
+            users[this.defaultUsername] = {
+                createdAt: new Date().toISOString(),
+                settings: { wallpaper: 'public/AerionOs.png' }
+            };
+            localStorage.setItem('aerionOS_users', JSON.stringify(users));
         }
+        this.userSession.currentUser = null;
+        localStorage.removeItem('aerionOS_currentUser');
     }
 }
 
