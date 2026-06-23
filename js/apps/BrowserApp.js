@@ -69,9 +69,13 @@ export class BrowserApp extends App {
         contentElement.querySelector('.try-alternative').addEventListener('click', (e) => { e.preventDefault(); this._loadAlternativeSite(); });
         this.iframe.addEventListener('load', () => this._onIframeContentLoaded());
         window.addEventListener('message', this.messageHandler);
+        windowInstance.on('beforeClose', () => this.destroy());
 
-        const initialUrl = launchOptions?.url || 'https://www.google.com';
-        this._loadUrl(initialUrl);
+        if (launchOptions?.url) {
+            this._loadUrl(launchOptions.url);
+        } else {
+            this._showStartPage();
+        }
     }
 
     _handleIframeMessage(event) {
@@ -279,8 +283,67 @@ export class BrowserApp extends App {
     }
 
     _loadAlternativeSite() {
-        const sites = ['https://www.wikipedia.org/', 'https://httpbin.org/html', 'https://html5test.com/'];
-        this._loadUrl(sites[Math.floor(Math.random() * sites.length)]);
+        this._showStartPage();
+    }
+
+    _showStartPage() {
+        this.currentOriginalUrl = null;
+        this.addressBar.value = '';
+        this.window.setTitle('Web Browser');
+        this.iframeMessage.style.display = 'none';
+        this.iframe.style.display = 'block';
+        this.iframe.srcdoc = this._getStartPageHtml();
+        this._updateNavButtons();
+    }
+
+    _getStartPageHtml() {
+        const sites = [
+            { url: 'https://en.wikipedia.org/wiki/Main_Page', name: 'Wikipedia', desc: 'The free encyclopedia' },
+            { url: 'https://example.com', name: 'example.com', desc: 'Minimal sample page' },
+            { url: 'https://httpbin.org/html', name: 'httpbin', desc: 'Sample HTML document' },
+            { url: 'http://info.cern.ch', name: 'CERN', desc: 'The first website ever' },
+            { url: 'https://news.ycombinator.com', name: 'Hacker News', desc: 'Tech news' },
+            { url: 'https://lite.cnn.com', name: 'CNN Lite', desc: 'Text-only news' }
+        ];
+        const cards = sites.map(s => `
+            <a class="card" data-url="${s.url}">
+                <span class="card-name">${s.name}</span>
+                <span class="card-desc">${s.desc}</span>
+            </a>
+        `).join('');
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1e1f26; color: #e8e8ea; padding: 40px 24px; }
+    .logo { font-size: 2.4rem; font-weight: 700; text-align: center; margin-bottom: 6px; }
+    .tagline { text-align: center; opacity: 0.6; margin-bottom: 8px; }
+    .note { text-align: center; opacity: 0.45; font-size: 0.8rem; margin-bottom: 32px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; max-width: 720px; margin: 0 auto; }
+    .card { display: flex; flex-direction: column; gap: 4px; padding: 18px; border-radius: 12px; background: #2a2c36; border: 1px solid #383a46; text-decoration: none; color: inherit; cursor: pointer; transition: transform 0.15s, border-color 0.15s; }
+    .card:hover { transform: translateY(-3px); border-color: #4a90e2; }
+    .card-name { font-weight: 600; }
+    .card-desc { font-size: 0.82rem; opacity: 0.6; }
+</style>
+</head>
+<body>
+    <div class="logo">AerionOS Browser</div>
+    <div class="tagline">Pick a destination</div>
+    <div class="note">Pages are fetched through a CORS proxy, so some sites may not load fully.</div>
+    <div class="grid">${cards}</div>
+    <script>
+        document.addEventListener('click', (e) => {
+            const card = e.target.closest('.card[data-url]');
+            if (card) {
+                e.preventDefault();
+                parent.postMessage({ type: 'navigate', url: card.dataset.url }, '*');
+            }
+        });
+    </script>
+</body>
+</html>`;
     }
 
     destroy() {
