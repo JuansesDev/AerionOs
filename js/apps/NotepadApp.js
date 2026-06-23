@@ -6,11 +6,11 @@ export class NotepadApp extends App {
             window: { width: 650, height: 500, minWidth: 400, minHeight: 300, customClass: 'notepad-app' },
             allowMultipleInstances: true
         });
-        this.currentFilePath = null;
-        this.textarea = null;
-        this.filenameInput = null;
-        this.originalContent = "";
-        this.isDirty = false;
+        this.windows = new Map();
+    }
+
+    _state(windowInstance) {
+        return windowInstance ? this.windows.get(windowInstance.id) : null;
     }
 
     renderContent(contentElement, windowInstance, launchOptions) {
@@ -24,64 +24,68 @@ export class NotepadApp extends App {
             </div>
             <textarea class="notepad-textarea" spellcheck="false"></textarea>
         `;
-        this.textarea = contentElement.querySelector('.notepad-textarea');
-        this.filenameDisplay = contentElement.querySelector('.notepad-filename-display');
+
+        const state = {
+            textarea: contentElement.querySelector('.notepad-textarea'),
+            filenameDisplay: contentElement.querySelector('.notepad-filename-display'),
+            currentFilePath: null,
+            originalContent: '',
+            isDirty: false
+        };
+        this.windows.set(windowInstance.id, state);
 
         contentElement.querySelector('.notepad-toolbar').addEventListener('click', async (e) => {
             const button = e.target.closest('button[data-action]');
-            if (button) await this._handleToolbarAction(button.dataset.action);
+            if (button) await this._handleToolbarAction(button.dataset.action, windowInstance);
         });
 
-        this.textarea.addEventListener('input', () => {
-            this.isDirty = this.textarea.value !== this.originalContent;
+        state.textarea.addEventListener('input', () => {
+            state.isDirty = state.textarea.value !== state.originalContent;
             this._updateWindowTitle(windowInstance);
         });
 
-        windowInstance.element.addEventListener('keydown', (e) => this._handleKeyDown(e));
-
+        windowInstance.element.addEventListener('keydown', (e) => this._handleKeyDown(e, windowInstance));
 
         windowInstance.on('beforeClose', () => this._handleBeforeClose(windowInstance));
+        windowInstance.on('close', () => this.windows.delete(windowInstance.id));
 
         if (launchOptions && launchOptions.filePathToOpen) {
             this._loadFile(launchOptions.filePathToOpen, windowInstance);
         } else {
             this._newFile(windowInstance);
         }
-        this.textarea.focus();
+        state.textarea.focus();
     }
 
-    _handleKeyDown(e) {
+    _handleKeyDown(e, windowInstance) {
         if (e.ctrlKey) {
             switch(e.key.toLowerCase()) {
                 case 'n':
                     e.preventDefault();
-                    this._handleToolbarAction('new');
+                    this._handleToolbarAction('new', windowInstance);
                     break;
                 case 'o':
                     e.preventDefault();
-                    this._handleToolbarAction('open');
+                    this._handleToolbarAction('open', windowInstance);
                     break;
                 case 's':
                     e.preventDefault();
-                    if (e.shiftKey) {
-                        this._handleToolbarAction('save-as');
-                    } else {
-                        this._handleToolbarAction('save');
-                    }
+                    this._handleToolbarAction(e.shiftKey ? 'save-as' : 'save', windowInstance);
                     break;
             }
         }
     }
 
     async _handleBeforeClose(windowInstance) {
-        if (this.isDirty) {
+        const state = this._state(windowInstance);
+        if (state && state.isDirty) {
             const shouldSave = await this.webOS.modals.showConfirm(
                 "You have unsaved changes. Do you want to save before closing?",
                 'Unsaved changes',
                 'fa-exclamation-triangle'
             );
             if (shouldSave) {
-                const saved = this._saveFile(windowInstance);
+                const saved = await this._saveFile(windowInstance);
                 if (!saved) {
                     console.warn("Notepad: Save failed or was cancelled. Closing will continue.");
                 }
@@ -89,16 +93,13 @@ export class NotepadApp extends App {
         }
     }
 
-    async _handleToolbarAction(action) {
-        const currentWindow = this.webOS.windowManager.getWindow(this.instances[this.instances.length -1]?.id);
-        if (!currentWindow) {
-            console.error("Notepad: Could not get the current window instance.");
-            return;
-        }
+    async _handleToolbarAction(action, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
 
         switch(action) {
             case 'new':
-                if (this.isDirty) {
+                if (state.isDirty) {
                     const shouldDiscard = await this.webOS.modals.showConfirm(
                         "There are unsaved changes. Discard them and create a new file?",
                         'Unsaved changes',
@@ -106,10 +107,10 @@ export class NotepadApp extends App {
                     );
                     if (!shouldDiscard) return;
                 }
-                this._newFile(currentWindow);
+                this._newFile(windowInstance);
                 break;
             case 'open':
-                if (this.isDirty) {
+                if (state.isDirty) {
                     const shouldDiscard = await this.webOS.modals.showConfirm(
                         "There are unsaved changes. Discard them and open another file?",
                         'Unsaved changes',
@@ -117,44 +118,49 @@ export class NotepadApp extends App {
                     );
                     if (!shouldDiscard) return;
                 }
-                await this._openFilePrompt(currentWindow);
+                await this._openFilePrompt(windowInstance);
                 break;
-            case 'save': await this._saveFile(currentWindow); break;
-            case 'save-as': await this._saveFileAs(currentWindow); break;
+            case 'save': await this._saveFile(windowInstance); break;
+            case 'save-as': await this._saveFileAs(windowInstance); break;
         }
     }
 
     _updateWindowTitle(windowInstance) {
-        if (!windowInstance) return;
+        const state = this._state(windowInstance);
+        if (!windowInstance || !state) return;
         const baseTitle = "Notepad";
         let fileName = "Untitled";
-        if (this.currentFilePath) {
-            fileName = this.currentFilePath.substring(this.currentFilePath.lastIndexOf('/') + 1);
+        if (state.currentFilePath) {
+            fileName = state.currentFilePath.substring(state.currentFilePath.lastIndexOf('/') + 1);
         }
 
-        const unsavedMark = this.isDirty ? "*" : "";
+        const unsavedMark = state.isDirty ? "*" : "";
         windowInstance.setTitle(`${baseTitle} - ${fileName}${unsavedMark}`);
-        if (this.filenameDisplay) {
-            this.filenameDisplay.textContent = `${fileName}${unsavedMark}`;
+        if (state.filenameDisplay) {
+            state.filenameDisplay.textContent = `${fileName}${unsavedMark}`;
         }
     }
 
     _newFile(windowInstance) {
-        this.textarea.value = '';
-        this.originalContent = '';
-        this.currentFilePath = null;
-        this.isDirty = false;
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.textarea.value = '';
+        state.originalContent = '';
+        state.currentFilePath = null;
+        state.isDirty = false;
         this._updateWindowTitle(windowInstance);
-        this.textarea.focus();
+        state.textarea.focus();
     }
 
     _loadFile(path, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
         const content = this.webOS.fs.readFile(path);
         if (content !== null) {
-            this.textarea.value = content;
-            this.originalContent = content;
-            this.currentFilePath = path;
-            this.isDirty = false;
+            state.textarea.value = content;
+            state.originalContent = content;
+            state.currentFilePath = path;
+            state.isDirty = false;
             this._updateWindowTitle(windowInstance);
         } else {
             this.webOS.modals.showAlert(`Error: Could not open the file "${path}".`, 'Error opening file', 'fa-exclamation-triangle');
@@ -163,8 +169,10 @@ export class NotepadApp extends App {
     }
 
     async _openFilePrompt(windowInstance) {
-        const defaultPath = this.currentFilePath ?
-            this.currentFilePath.substring(0, this.currentFilePath.lastIndexOf('/') + 1) :
+        const state = this._state(windowInstance);
+        if (!state) return;
+        const defaultPath = state.currentFilePath ?
+            state.currentFilePath.substring(0, state.currentFilePath.lastIndexOf('/') + 1) :
             "/Documents/";
 
         try {
@@ -182,14 +190,16 @@ export class NotepadApp extends App {
     }
 
     async _saveFile(windowInstance) {
-        if (!this.currentFilePath) {
+        const state = this._state(windowInstance);
+        if (!state) return false;
+        if (!state.currentFilePath) {
             return await this._saveFileAs(windowInstance);
         }
 
-        const success = this.webOS.fs.writeFile(this.currentFilePath, this.textarea.value);
+        const success = this.webOS.fs.writeFile(state.currentFilePath, state.textarea.value);
         if (success) {
-            this.originalContent = this.textarea.value;
-            this.isDirty = false;
+            state.originalContent = state.textarea.value;
+            state.isDirty = false;
             this._updateWindowTitle(windowInstance);
             return true;
         } else {
@@ -199,12 +209,14 @@ export class NotepadApp extends App {
     }
 
     async _saveFileAs(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return false;
         let defaultDir = "/Documents/";
         let defaultName = "Untitled.txt";
 
-        if (this.currentFilePath) {
-            defaultDir = this.currentFilePath.substring(0, this.currentFilePath.lastIndexOf('/') + 1);
-            defaultName = this.currentFilePath.substring(this.currentFilePath.lastIndexOf('/') + 1);
+        if (state.currentFilePath) {
+            defaultDir = state.currentFilePath.substring(0, state.currentFilePath.lastIndexOf('/') + 1);
+            defaultName = state.currentFilePath.substring(state.currentFilePath.lastIndexOf('/') + 1);
         }
 
         const newPath = await this.webOS.modals.showFileSaveDialog(
@@ -224,11 +236,11 @@ export class NotepadApp extends App {
             if (!shouldOverwrite) return false;
         }
 
-        const success = this.webOS.fs.writeFile(newPath, this.textarea.value);
+        const success = this.webOS.fs.writeFile(newPath, state.textarea.value);
         if (success) {
-            this.currentFilePath = newPath;
-            this.originalContent = this.textarea.value;
-            this.isDirty = false;
+            state.currentFilePath = newPath;
+            state.originalContent = state.textarea.value;
+            state.isDirty = false;
             this._updateWindowTitle(windowInstance);
             return true;
         } else {
@@ -239,8 +251,9 @@ export class NotepadApp extends App {
 
     async onRelaunch(windowInstance, launchOptions) {
         super.onRelaunch(windowInstance, launchOptions);
+        const state = this._state(windowInstance);
         if (launchOptions && launchOptions.filePathToOpen) {
-            if (this.isDirty) {
+            if (state && state.isDirty) {
                 const shouldDiscard = await this.webOS.modals.showConfirm(
                     "You have unsaved changes in this window's current file. Discard them and open the new file here?",
                     'Unsaved changes',

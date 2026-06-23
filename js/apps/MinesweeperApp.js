@@ -6,32 +6,24 @@ export class MinesweeperApp extends App {
             window: { width: 400, height: 480, minWidth: 300, minHeight: 350, customClass: 'minesweeper-app' },
             allowMultipleInstances: true
         });
-        this.rows = 10;
-        this.cols = 10;
-        this.mines = 15;
+        this.windows = new Map();
+    }
 
-        this.board = [];
-        this.revealedCells = 0;
-        this.flagsPlaced = 0;
-        this.gameOver = false;
-        this.firstClick = true;
-        this.timerInterval = null;
-        this.secondsElapsed = 0;
-
-        this.boardElement = null;
-        this.statusElement = null;
-        this.timerElement = null;
-        this.minesLeftElement = null;
+    _state(windowInstance) {
+        return windowInstance ? this.windows.get(windowInstance.id) : null;
     }
 
     renderContent(contentElement, windowInstance, launchOptions) {
-        this.activeWindowInstance = windowInstance;
+        const rows = 10;
+        const cols = 10;
+        const mines = 15;
+
         contentElement.innerHTML = `
             <div class="minesweeper-game">
                 <div class="game-info">
                     <button class="new-game-button" title="New Game"><i class="fas fa-redo"></i> New Game</button>
                     <div class="info-panel">
-                        <span><i class="fas fa-flag"></i> Mines: <span class="mines-left">${this.mines}</span></span>
+                        <span><i class="fas fa-flag"></i> Mines: <span class="mines-left">${mines}</span></span>
                         <span><i class="fas fa-clock"></i> Time: <span class="timer">0</span>s</span>
                     </div>
                 </div>
@@ -41,47 +33,72 @@ export class MinesweeperApp extends App {
             </div>
         `;
 
-        this.boardElement = contentElement.querySelector('.game-board');
-        this.statusElement = contentElement.querySelector('.game-status');
-        this.timerElement = contentElement.querySelector('.timer');
-        this.minesLeftElement = contentElement.querySelector('.mines-left');
+        const state = {
+            rows,
+            cols,
+            mines,
+            board: [],
+            revealedCells: 0,
+            flagsPlaced: 0,
+            gameOver: false,
+            firstClick: true,
+            timerInterval: null,
+            secondsElapsed: 0,
+            boardElement: contentElement.querySelector('.game-board'),
+            statusElement: contentElement.querySelector('.game-status'),
+            timerElement: contentElement.querySelector('.timer'),
+            minesLeftElement: contentElement.querySelector('.mines-left')
+        };
+        this.windows.set(windowInstance.id, state);
 
-        contentElement.querySelector('.new-game-button').addEventListener('click', () => this.resetGame());
+        contentElement.querySelector('.new-game-button').addEventListener('click', () => this.resetGame(windowInstance));
 
-        this.boardElement.addEventListener('click', (e) => this._handleCellClick(e));
-        this.boardElement.addEventListener('contextmenu', (e) => this._handleCellRightClick(e));
+        state.boardElement.addEventListener('click', (e) => this._handleCellClick(e, windowInstance));
+        state.boardElement.addEventListener('contextmenu', (e) => this._handleCellRightClick(e, windowInstance));
 
-        this.resetGame();
+        windowInstance.on('close', () => {
+            const s = this._state(windowInstance);
+            if (s && s.timerInterval) clearInterval(s.timerInterval);
+            this.windows.delete(windowInstance.id);
+        });
+
+        this.resetGame(windowInstance);
         windowInstance.setTitle("Minesweeper");
     }
 
-    resetGame() {
-        this.gameOver = false;
-        this.firstClick = true;
-        this.revealedCells = 0;
-        this.flagsPlaced = 0;
-        this.secondsElapsed = 0;
+    resetGame(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.gameOver = false;
+        state.firstClick = true;
+        state.revealedCells = 0;
+        state.flagsPlaced = 0;
+        state.secondsElapsed = 0;
 
-        if (this.timerInterval) clearInterval(this.timerInterval);
-        this.timerElement.textContent = '0';
-        this.minesLeftElement.textContent = this.mines;
-        this.statusElement.textContent = 'Click to start!';
-        this.statusElement.className = 'game-status';
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.timerElement.textContent = '0';
+        state.minesLeftElement.textContent = state.mines;
+        state.statusElement.textContent = 'Click to start!';
+        state.statusElement.className = 'game-status';
 
-        this._createBoard();
-        this._renderBoard();
+        this._createBoard(windowInstance);
+        this._renderBoard(windowInstance);
     }
 
-    _startTimer() {
-        this.timerInterval = setInterval(() => {
-            this.secondsElapsed++;
-            this.timerElement.textContent = this.secondsElapsed;
+    _startTimer(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.timerInterval = setInterval(() => {
+            state.secondsElapsed++;
+            state.timerElement.textContent = state.secondsElapsed;
         }, 1000);
     }
 
-    _createBoard() {
-        this.board = Array(this.rows).fill(null).map(() =>
-            Array(this.cols).fill(null).map(() => ({
+    _createBoard(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.board = Array(state.rows).fill(null).map(() =>
+            Array(state.cols).fill(null).map(() => ({
                 isMine: false,
                 isRevealed: false,
                 isFlagged: false,
@@ -90,43 +107,47 @@ export class MinesweeperApp extends App {
         );
     }
 
-    _placeMines(firstClickRow, firstClickCol) {
-        let minesToPlace = this.mines;
+    _placeMines(windowInstance, firstClickRow, firstClickCol) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        let minesToPlace = state.mines;
         while (minesToPlace > 0) {
-            const r = Math.floor(Math.random() * this.rows);
-            const c = Math.floor(Math.random() * this.cols);
-            if ((r === firstClickRow && c === firstClickCol) || this.board[r][c].isMine) {
+            const r = Math.floor(Math.random() * state.rows);
+            const c = Math.floor(Math.random() * state.cols);
+            if ((r === firstClickRow && c === firstClickCol) || state.board[r][c].isMine) {
                 continue;
             }
-            this.board[r][c].isMine = true;
+            state.board[r][c].isMine = true;
             minesToPlace--;
         }
 
-        for (let r = 0; r < this.rows; r++) {
-            for (let c = 0; c < this.cols; c++) {
-                if (this.board[r][c].isMine) continue;
+        for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+                if (state.board[r][c].isMine) continue;
                 let count = 0;
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) {
                         if (dr === 0 && dc === 0) continue;
                         const nr = r + dr;
                         const nc = c + dc;
-                        if (nr >= 0 && nr < this.rows && nc >= 0 && nc < this.cols && this.board[nr][nc].isMine) {
+                        if (nr >= 0 && nr < state.rows && nc >= 0 && nc < state.cols && state.board[nr][nc].isMine) {
                             count++;
                         }
                     }
                 }
-                this.board[r][c].adjacentMines = count;
+                state.board[r][c].adjacentMines = count;
             }
         }
     }
 
-    _renderBoard() {
-        this.boardElement.innerHTML = '';
-        this.boardElement.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
-        for (let r = 0; r < this.rows; r++) {
-            for (let c = 0; c < this.cols; c++) {
-                const cell = this.board[r][c];
+    _renderBoard(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.boardElement.innerHTML = '';
+        state.boardElement.style.gridTemplateColumns = `repeat(${state.cols}, 1fr)`;
+        for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+                const cell = state.board[r][c];
                 const cellEl = document.createElement('div');
                 cellEl.classList.add('cell');
                 cellEl.dataset.row = r;
@@ -145,110 +166,115 @@ export class MinesweeperApp extends App {
                     cellEl.innerHTML = '<i class="fas fa-flag"></i>';
                     cellEl.classList.add('flagged');
                 }
-                this.boardElement.appendChild(cellEl);
+                state.boardElement.appendChild(cellEl);
             }
         }
     }
 
-    _handleCellClick(e) {
-        if (this.gameOver) return;
+    _handleCellClick(e, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (state.gameOver) return;
         const cellEl = e.target.closest('.cell');
         if (!cellEl) return;
 
         const r = parseInt(cellEl.dataset.row);
         const c = parseInt(cellEl.dataset.col);
-        const cell = this.board[r][c];
+        const cell = state.board[r][c];
 
         if (cell.isRevealed || cell.isFlagged) return;
 
-        if (this.firstClick) {
-            this._placeMines(r,c);
-            this._startTimer();
-            this.firstClick = false;
-            this.statusElement.textContent = 'Game in progress!';
+        if (state.firstClick) {
+            this._placeMines(windowInstance, r, c);
+            this._startTimer(windowInstance);
+            state.firstClick = false;
+            state.statusElement.textContent = 'Game in progress!';
         }
 
         if (cell.isMine) {
-            this._gameOver(false);
+            this._gameOver(windowInstance, false);
             cell.isRevealed = true;
         } else {
-            this._revealCell(r, c);
-            this._checkWinCondition();
+            this._revealCell(windowInstance, r, c);
+            this._checkWinCondition(windowInstance);
         }
-        this._renderBoard();
+        this._renderBoard(windowInstance);
     }
 
-    _handleCellRightClick(e) {
+    _handleCellRightClick(e, windowInstance) {
         e.preventDefault();
-        if (this.gameOver || this.firstClick) return;
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (state.gameOver || state.firstClick) return;
 
         const cellEl = e.target.closest('.cell');
         if (!cellEl) return;
 
         const r = parseInt(cellEl.dataset.row);
         const c = parseInt(cellEl.dataset.col);
-        const cell = this.board[r][c];
+        const cell = state.board[r][c];
 
         if (cell.isRevealed) return;
 
         if (cell.isFlagged) {
             cell.isFlagged = false;
-            this.flagsPlaced--;
+            state.flagsPlaced--;
         } else {
-            if (this.flagsPlaced < this.mines) {
+            if (state.flagsPlaced < state.mines) {
                 cell.isFlagged = true;
-                this.flagsPlaced++;
+                state.flagsPlaced++;
             } else {
-                this.statusElement.textContent = 'No more flags!';
-                setTimeout(() => { if(!this.gameOver) this.statusElement.textContent = 'Game in progress!'; }, 2000);
+                state.statusElement.textContent = 'No more flags!';
+                setTimeout(() => { if(!state.gameOver) state.statusElement.textContent = 'Game in progress!'; }, 2000);
             }
         }
-        this.minesLeftElement.textContent = this.mines - this.flagsPlaced;
-        this._renderBoard();
+        state.minesLeftElement.textContent = state.mines - state.flagsPlaced;
+        this._renderBoard(windowInstance);
     }
 
-    _revealCell(r, c) {
-        if (r < 0 || r >= this.rows || c < 0 || c >= this.cols) return;
-        const cell = this.board[r][c];
+    _revealCell(windowInstance, r, c) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (r < 0 || r >= state.rows || c < 0 || c >= state.cols) return;
+        const cell = state.board[r][c];
         if (cell.isRevealed || cell.isFlagged || cell.isMine) return;
 
         cell.isRevealed = true;
-        this.revealedCells++;
+        state.revealedCells++;
 
         if (cell.adjacentMines === 0) {
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     if (dr === 0 && dc === 0) continue;
-                    this._revealCell(r + dr, c + dc);
+                    this._revealCell(windowInstance, r + dr, c + dc);
                 }
             }
         }
     }
 
-    _gameOver(won) {
-        this.gameOver = true;
-        clearInterval(this.timerInterval);
+    _gameOver(windowInstance, won) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.gameOver = true;
+        clearInterval(state.timerInterval);
         if (won) {
-            this.statusElement.textContent = 'You won!';
-            this.statusElement.className = 'game-status win';
+            state.statusElement.textContent = 'You won!';
+            state.statusElement.className = 'game-status win';
         } else {
-            this.statusElement.textContent = 'You lost! Mine found.';
-            this.statusElement.className = 'game-status lose';
-            this.board.forEach(row => row.forEach(cell => {
+            state.statusElement.textContent = 'You lost! Mine found.';
+            state.statusElement.className = 'game-status lose';
+            state.board.forEach(row => row.forEach(cell => {
                 if (cell.isMine) cell.isRevealed = true;
             }));
         }
     }
 
-    _checkWinCondition() {
-        const totalNonMineCells = this.rows * this.cols - this.mines;
-        if (this.revealedCells === totalNonMineCells) {
-            this._gameOver(true);
+    _checkWinCondition(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        const totalNonMineCells = state.rows * state.cols - state.mines;
+        if (state.revealedCells === totalNonMineCells) {
+            this._gameOver(windowInstance, true);
         }
-    }
-
-    onClose() {
-        if (this.timerInterval) clearInterval(this.timerInterval);
-        super.onClose();
     }
 }

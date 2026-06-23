@@ -7,15 +7,7 @@ export class ChessApp extends App {
             allowMultipleInstances: true
         });
 
-        this.board = [];
-        this.currentPlayer = 'white';
-        this.selectedPiece = null;
-        this.possibleMoves = [];
-        this.gameStatus = "Select a game mode.";
-        this.gameMode = null;
         this.aiPlayer = 'black';
-        this.isAiThinking = false;
-        this.gameOver = false;
 
         this.pieces = {
             'P': '♙', 'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔',
@@ -23,18 +15,19 @@ export class ChessApp extends App {
         };
         this.pieceValues = { 'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 100 };
 
-        this.boardElement = null;
-        this.statusElement = null;
-        this.modeSelectionElement = null;
+        this.windows = new Map();
+    }
+
+    _state(windowInstance) {
+        return windowInstance ? this.windows.get(windowInstance.id) : null;
     }
 
     renderContent(contentElement, windowInstance, launchOptions) {
-        this.activeWindowInstance = windowInstance;
         contentElement.innerHTML = `
             <div class="chess-game">
                 <div class="chess-info">
                     <button class="new-chess-game-button" title="New Game"><i class="fas fa-redo"></i> New Game</button>
-                    <span class="chess-status">${this.gameStatus}</span>
+                    <span class="chess-status">Select a game mode.</span>
                 </div>
                 <div class="chess-mode-selection">
                     <div class="chess-mode-header">
@@ -67,45 +60,64 @@ export class ChessApp extends App {
             </div>
         `;
 
-        this.boardElement = contentElement.querySelector('.chess-board');
-        this.statusElement = contentElement.querySelector('.chess-status');
-        this.modeSelectionElement = contentElement.querySelector('.chess-mode-selection');
+        const state = {
+            board: [],
+            currentPlayer: 'white',
+            selectedPiece: null,
+            possibleMoves: [],
+            gameStatus: 'Select a game mode.',
+            gameMode: null,
+            isAiThinking: false,
+            gameOver: false,
+            boardElement: null,
+            statusElement: null,
+            modeSelectionElement: null
+        };
 
-        contentElement.querySelector('.new-chess-game-button').addEventListener('click', () => this._showModeSelection());
+        state.boardElement = contentElement.querySelector('.chess-board');
+        state.statusElement = contentElement.querySelector('.chess-status');
+        state.modeSelectionElement = contentElement.querySelector('.chess-mode-selection');
 
-        this.modeSelectionElement.querySelectorAll('.chess-mode-card, .chess-mode-button').forEach(element => {
+        this.windows.set(windowInstance.id, state);
+        windowInstance.on('close', () => this.windows.delete(windowInstance.id));
+
+        contentElement.querySelector('.new-chess-game-button').addEventListener('click', () => this._showModeSelection(windowInstance));
+
+        state.modeSelectionElement.querySelectorAll('.chess-mode-card, .chess-mode-button').forEach(element => {
             element.addEventListener('click', (e) => {
                 const target = e.currentTarget;
                 const mode = target.dataset.mode || target.querySelector('[data-mode]')?.dataset.mode;
                 if (mode) {
-                    this.gameMode = mode;
-                    this._startGame();
+                    state.gameMode = mode;
+                    this._startGame(windowInstance);
                 }
             });
         });
 
-        this.boardElement.addEventListener('click', (e) => {
-            this._handleSquareClick(e);
+        state.boardElement.addEventListener('click', (e) => {
+            this._handleSquareClick(e, windowInstance);
         });
 
-        this._showModeSelection();
+        this._showModeSelection(windowInstance);
         windowInstance.setTitle("Chess - Choose Mode");
     }
 
-    _showModeSelection() {
-        this.gameOver = false;
-        this.gameMode = null;
-        this.boardElement.style.display = 'none';
-        this.modeSelectionElement.style.display = 'flex';
-        this.modeSelectionElement.style.flexDirection = 'column';
-        this.gameStatus = "Select a game mode.";
-        this.statusElement.textContent = this.gameStatus;
-        this.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
-        this.activeWindowInstance.setTitle("Chess - Choose Mode");
-        this.selectedPiece = null;
-        this.possibleMoves = [];
+    _showModeSelection(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.gameOver = false;
+        state.gameMode = null;
+        state.boardElement.style.display = 'none';
+        state.modeSelectionElement.style.display = 'flex';
+        state.modeSelectionElement.style.flexDirection = 'column';
+        state.gameStatus = "Select a game mode.";
+        state.statusElement.textContent = state.gameStatus;
+        state.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
+        windowInstance.setTitle("Chess - Choose Mode");
+        state.selectedPiece = null;
+        state.possibleMoves = [];
 
-        if(this.boardElement) this.boardElement.innerHTML = '';
+        if(state.boardElement) state.boardElement.innerHTML = '';
 
         const existingStyle = document.getElementById('chess-mode-styles');
         if (!existingStyle) {
@@ -129,39 +141,47 @@ export class ChessApp extends App {
         }
     }
 
-    _startGame() {
-        if (!this.gameMode) return;
-        this.gameOver = false;
-        this.modeSelectionElement.style.display = 'none';
-        this.boardElement.style.display = 'grid';
-        this.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
-        this.resetGameLogic();
+    _startGame(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (!state.gameMode) return;
+        state.gameOver = false;
+        state.modeSelectionElement.style.display = 'none';
+        state.boardElement.style.display = 'grid';
+        state.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
+        this.resetGameLogic(windowInstance);
     }
 
-    resetGameLogic() {
-        this.currentPlayer = 'white';
-        this.selectedPiece = null;
-        this.possibleMoves = [];
-        this.isAiThinking = false;
-        this._setupInitialBoard();
-        this._renderBoard();
-        this._updateStatus();
-        this.activeWindowInstance.setTitle(`Chess - ${this.gameMode === '1P' ? 'vs AI' : '2 Players'}`);
+    resetGameLogic(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.currentPlayer = 'white';
+        state.selectedPiece = null;
+        state.possibleMoves = [];
+        state.isAiThinking = false;
+        this._setupInitialBoard(windowInstance);
+        this._renderBoard(windowInstance);
+        this._updateStatus(windowInstance);
+        windowInstance.setTitle(`Chess - ${state.gameMode === '1P' ? 'vs AI' : '2 Players'}`);
     }
 
-    _setupInitialBoard() {
-        this.board = Array(8).fill().map(() => Array(8).fill(null));
-        this.board[0] = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
-        this.board[1] = Array(8).fill('p');
-        this.board[6] = Array(8).fill('P');
-        this.board[7] = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'];
+    _setupInitialBoard(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.board = Array(8).fill().map(() => Array(8).fill(null));
+        state.board[0] = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
+        state.board[1] = Array(8).fill('p');
+        state.board[6] = Array(8).fill('P');
+        state.board[7] = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'];
     }
 
-    _renderBoard() {
-        if (!this.boardElement) return;
-        this.boardElement.innerHTML = '';
-        this.boardElement.style.gridTemplateColumns = `repeat(8, 1fr)`;
-        this.boardElement.style.gridTemplateRows = `repeat(8, 1fr)`;
+    _renderBoard(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (!state.boardElement) return;
+        state.boardElement.innerHTML = '';
+        state.boardElement.style.gridTemplateColumns = `repeat(8, 1fr)`;
+        state.boardElement.style.gridTemplateRows = `repeat(8, 1fr)`;
 
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
@@ -171,7 +191,7 @@ export class ChessApp extends App {
                 square.dataset.col = c;
                 square.classList.add((r + c) % 2 === 0 ? 'light-square' : 'dark-square');
 
-                const piece = this.board[r][c];
+                const piece = state.board[r][c];
                 if (piece) {
                     const pieceElement = document.createElement('div');
                     pieceElement.classList.add('chess-piece');
@@ -180,13 +200,13 @@ export class ChessApp extends App {
                     square.appendChild(pieceElement);
                 }
 
-                if (this.selectedPiece && this.selectedPiece.row === r && this.selectedPiece.col === c) {
+                if (state.selectedPiece && state.selectedPiece.row === r && state.selectedPiece.col === c) {
                     square.classList.add('selected');
                 }
-                if (this.possibleMoves.some(move => move.r === r && move.c === c)) {
+                if (state.possibleMoves.some(move => move.r === r && move.c === c)) {
                     square.classList.add('possible-move');
                 }
-                this.boardElement.appendChild(square);
+                state.boardElement.appendChild(square);
             }
         }
     }
@@ -212,58 +232,60 @@ export class ChessApp extends App {
         return null;
     }
 
-    _handleSquareClick(e) {
-        if (this.gameOver || !this.gameMode) return;
-        if (this.gameMode === '1P' && this.currentPlayer === this.aiPlayer && this.isAiThinking) return;
+    _handleSquareClick(e, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (state.gameOver || !state.gameMode) return;
+        if (state.gameMode === '1P' && state.currentPlayer === this.aiPlayer && state.isAiThinking) return;
 
         const squareEl = e.target.closest('.chess-square');
         if (!squareEl) return;
 
         const r = parseInt(squareEl.dataset.row);
         const c = parseInt(squareEl.dataset.col);
-        const pieceCode = this.board[r][c];
+        const pieceCode = state.board[r][c];
 
-        if (this.selectedPiece) {
-            const isPossibleMoveTarget = this.possibleMoves.some(move => move.r === r && move.c === c);
+        if (state.selectedPiece) {
+            const isPossibleMoveTarget = state.possibleMoves.some(move => move.r === r && move.c === c);
             if (isPossibleMoveTarget) {
-                this._movePiece(this.selectedPiece.row, this.selectedPiece.col, r, c);
+                this._movePiece(state.selectedPiece.row, state.selectedPiece.col, r, c, state.board);
 
-                this.selectedPiece = null;
-                this.possibleMoves = [];
-                this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
+                state.selectedPiece = null;
+                state.possibleMoves = [];
+                state.currentPlayer = state.currentPlayer === 'white' ? 'black' : 'white';
 
-                this._checkForEndGame(this.currentPlayer);
-                this._updateStatus();
-                this._renderBoard();
+                this._checkForEndGame(state.currentPlayer, windowInstance);
+                this._updateStatus(windowInstance);
+                this._renderBoard(windowInstance);
 
-                if (!this.gameOver && this.gameMode === '1P' && this.currentPlayer === this.aiPlayer) {
-                    this._aiMove();
+                if (!state.gameOver && state.gameMode === '1P' && state.currentPlayer === this.aiPlayer) {
+                    this._aiMove(windowInstance);
                 }
             } else {
-                if (pieceCode && this._getPieceColor(pieceCode) === this.currentPlayer) {
-                    this.selectedPiece = { piece: pieceCode, color: this.currentPlayer, row: r, col: c };
-                    const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, this.board);
-                    this.possibleMoves = rawMoves.filter(move => {
-                        const tempBoard = this.board.map(arr => arr.slice());
+                if (pieceCode && this._getPieceColor(pieceCode) === state.currentPlayer) {
+                    state.selectedPiece = { piece: pieceCode, color: state.currentPlayer, row: r, col: c };
+                    const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, state.board);
+                    state.possibleMoves = rawMoves.filter(move => {
+                        const tempBoard = state.board.map(arr => arr.slice());
                         this._movePiece(r, c, move.r, move.c, tempBoard);
-                        return !this._isKingInCheck(this.currentPlayer, tempBoard);
+                        return !this._isKingInCheck(state.currentPlayer, tempBoard);
                     });
                 } else {
-                    this.selectedPiece = null;
-                    this.possibleMoves = [];
+                    state.selectedPiece = null;
+                    state.possibleMoves = [];
                 }
-                this._renderBoard();
+                this._renderBoard(windowInstance);
             }
         } else {
-            if (pieceCode && this._getPieceColor(pieceCode) === this.currentPlayer) {
-                this.selectedPiece = { piece: pieceCode, color: this.currentPlayer, row: r, col: c };
-                const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, this.board);
-                this.possibleMoves = rawMoves.filter(move => {
-                    const tempBoard = this.board.map(arr => arr.slice());
+            if (pieceCode && this._getPieceColor(pieceCode) === state.currentPlayer) {
+                state.selectedPiece = { piece: pieceCode, color: state.currentPlayer, row: r, col: c };
+                const rawMoves = this._calculatePossibleMovesForPiece(r, c, pieceCode, state.board);
+                state.possibleMoves = rawMoves.filter(move => {
+                    const tempBoard = state.board.map(arr => arr.slice());
                     this._movePiece(r, c, move.r, move.c, tempBoard);
-                    return !this._isKingInCheck(this.currentPlayer, tempBoard);
+                    return !this._isKingInCheck(state.currentPlayer, tempBoard);
                 });
-                this._renderBoard();
+                this._renderBoard(windowInstance);
             }
         }
     }
@@ -395,69 +417,75 @@ export class ChessApp extends App {
         return legalMoves;
     }
 
-    _checkForEndGame(playerWhoseTurnItIs) {
-        if (this.gameOver) return true;
+    _checkForEndGame(playerWhoseTurnItIs, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return true;
+        if (state.gameOver) return true;
 
-        const legalMoves = this._getAllLegalMovesForPlayer(playerWhoseTurnItIs, this.board);
+        const legalMoves = this._getAllLegalMovesForPlayer(playerWhoseTurnItIs, state.board);
         if (legalMoves.length === 0) {
-            this.gameOver = true;
-            if (this._isKingInCheck(playerWhoseTurnItIs, this.board)) {
-                this.gameStatus = `Checkmate! ${playerWhoseTurnItIs === 'white' ? 'Black' : 'White'} wins.`;
-                if(this.statusElement) {
-                    this.statusElement.classList.add('check-mate-status');
-                    this.statusElement.classList.remove('check-status');
+            state.gameOver = true;
+            if (this._isKingInCheck(playerWhoseTurnItIs, state.board)) {
+                state.gameStatus = `Checkmate! ${playerWhoseTurnItIs === 'white' ? 'Black' : 'White'} wins.`;
+                if(state.statusElement) {
+                    state.statusElement.classList.add('check-mate-status');
+                    state.statusElement.classList.remove('check-status');
                 }
             } else {
-                this.gameStatus = "Stalemate! Draw.";
-                 if(this.statusElement) this.statusElement.classList.add('stalemate-status');
+                state.gameStatus = "Stalemate! Draw.";
+                 if(state.statusElement) state.statusElement.classList.add('stalemate-status');
             }
             return true;
         }
         return false;
     }
 
-    _updateStatus() {
-        if (!this.statusElement) return;
+    _updateStatus(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (!state.statusElement) return;
 
-        if (this.gameOver) {
-            this.statusElement.textContent = this.gameStatus;
+        if (state.gameOver) {
+            state.statusElement.textContent = state.gameStatus;
             return;
         }
 
-        let turnMessage = `${this.currentPlayer === 'white' ? 'White' : 'Black'} to move.`;
+        let turnMessage = `${state.currentPlayer === 'white' ? 'White' : 'Black'} to move.`;
 
-        if (this.board && Array.isArray(this.board) && this.board.length === 8 && !this.gameOver) {
-            const kingCurrentlyInCheck = this._isKingInCheck(this.currentPlayer, this.board);
+        if (state.board && Array.isArray(state.board) && state.board.length === 8 && !state.gameOver) {
+            const kingCurrentlyInCheck = this._isKingInCheck(state.currentPlayer, state.board);
 
             if (kingCurrentlyInCheck) {
-                this.gameStatus = `Check! ${turnMessage}`;
-                this.statusElement.classList.add('check-status');
-                this.statusElement.classList.remove('check-mate-status', 'stalemate-status');
+                state.gameStatus = `Check! ${turnMessage}`;
+                state.statusElement.classList.add('check-status');
+                state.statusElement.classList.remove('check-mate-status', 'stalemate-status');
             } else {
-                this.gameStatus = turnMessage;
-                this.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
+                state.gameStatus = turnMessage;
+                state.statusElement.classList.remove('check-status', 'check-mate-status', 'stalemate-status');
             }
-        } else if (!this.gameOver) {
-            this.gameStatus = turnMessage;
+        } else if (!state.gameOver) {
+            state.gameStatus = turnMessage;
         }
-        this.statusElement.textContent = this.gameStatus;
+        state.statusElement.textContent = state.gameStatus;
     }
 
-    _aiMove() {
-        if (this.gameOver || this.currentPlayer !== this.aiPlayer || this.isAiThinking) return;
+    _aiMove(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (state.gameOver || state.currentPlayer !== this.aiPlayer || state.isAiThinking) return;
 
-        this.isAiThinking = true;
-        this.statusElement.textContent = `AI (${this.aiPlayer === 'white' ? 'White' : 'Black'}) is thinking...`;
-        this.selectedPiece = null;
-        this.possibleMoves = [];
-        this._renderBoard();
+        state.isAiThinking = true;
+        state.statusElement.textContent = `AI (${this.aiPlayer === 'white' ? 'White' : 'Black'}) is thinking...`;
+        state.selectedPiece = null;
+        state.possibleMoves = [];
+        this._renderBoard(windowInstance);
 
         setTimeout(() => {
-            const legalMoves = this._getAllLegalMovesForPlayer(this.aiPlayer, this.board);
+            const legalMoves = this._getAllLegalMovesForPlayer(this.aiPlayer, state.board);
 
             if (legalMoves.length === 0) {
                 console.log("AI has no legal moves. The game should have already ended.");
-                this.isAiThinking = false;
+                state.isAiThinking = false;
                 return;
             }
 
@@ -465,7 +493,7 @@ export class ChessApp extends App {
 
             let checkingMove = null;
             for (const move of legalMoves) {
-                const tempBoard = this.board.map(arr => arr.slice());
+                const tempBoard = state.board.map(arr => arr.slice());
                 this._movePiece(move.from.r, move.from.c, move.to.r, move.to.c, tempBoard);
                 const opponentColor = this.aiPlayer === 'white' ? 'black' : 'white';
                 if (this._isKingInCheck(opponentColor, tempBoard)) {
@@ -479,7 +507,7 @@ export class ChessApp extends App {
                 let highValueCapture = null;
                 let highestValue = -1;
                 for (const move of legalMoves) {
-                    const targetPieceCode = this.board[move.to.r][move.to.c];
+                    const targetPieceCode = state.board[move.to.r][move.to.c];
                     if (targetPieceCode) {
                         const value = this.pieceValues[targetPieceCode.toLowerCase()] || 0;
                         if (value > highestValue) {
@@ -496,19 +524,19 @@ export class ChessApp extends App {
             }
 
             if (bestMove) {
-                this._movePiece(bestMove.from.r, bestMove.from.c, bestMove.to.r, bestMove.to.c);
+                this._movePiece(bestMove.from.r, bestMove.from.c, bestMove.to.r, bestMove.to.c, state.board);
             } else {
                 console.error("AI could not select a move despite having options.");
-                this.isAiThinking = false;
+                state.isAiThinking = false;
                 return;
             }
 
-            this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
-            this.isAiThinking = false;
+            state.currentPlayer = state.currentPlayer === 'white' ? 'black' : 'white';
+            state.isAiThinking = false;
 
-            this._checkForEndGame(this.currentPlayer);
-            this._updateStatus();
-            this._renderBoard();
+            this._checkForEndGame(state.currentPlayer, windowInstance);
+            this._updateStatus(windowInstance);
+            this._renderBoard(windowInstance);
 
         }, 1000);
     }

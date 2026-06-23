@@ -6,18 +6,14 @@ export class CodeEditorApp extends App {
             window: { width: 700, height: 550, minWidth: 500, minHeight: 400, customClass: 'codeeditor-app' },
             allowMultipleInstances: true
         });
-        this.textarea = null;
-        this.currentFilePath = null;
-        this.originalContent = "";
-        this.isDirty = false;
-        this.previewWindow = null;
-        this.codeEditor = null;
-        this.currentLanguage = 'plaintext';
+        this.windows = new Map();
+    }
+
+    _state(windowInstance) {
+        return windowInstance ? this.windows.get(windowInstance.id) : null;
     }
 
     renderContent(contentElement, windowInstance, launchOptions) {
-        this.activeWindowInstance = windowInstance;
-
         contentElement.innerHTML = `
             <div class="codeeditor-toolbar">
                 <button data-action="new" title="New (Ctrl+N)"><i class="fas fa-file"></i> New</button>
@@ -37,14 +33,23 @@ export class CodeEditorApp extends App {
             </div>
         `;
 
-        this.textarea = contentElement.querySelector('.codeeditor-textarea');
-        this.codeEditor = contentElement.querySelector('.code-mirror');
-        const codeContainer = contentElement.querySelector('.code-mirror-wrapper');
-        this.filenameDisplay = contentElement.querySelector('.codeeditor-filename-display');
-        this.statusBarInfo = contentElement.querySelector('.codeeditor-statusbar > span:first-child');
-        this.fileTypeIndicator = contentElement.querySelector('.file-type-indicator');
+        const state = {
+            textarea: contentElement.querySelector('.codeeditor-textarea'),
+            codeEditor: contentElement.querySelector('.code-mirror'),
+            filenameDisplay: contentElement.querySelector('.codeeditor-filename-display'),
+            statusBarInfo: contentElement.querySelector('.codeeditor-statusbar > span:first-child'),
+            fileTypeIndicator: contentElement.querySelector('.file-type-indicator'),
+            currentFilePath: null,
+            originalContent: "",
+            isDirty: false,
+            previewWindow: null,
+            currentLanguage: 'plaintext'
+        };
+        this.windows.set(windowInstance.id, state);
 
-                this.textarea.style.cssText = `
+        const codeContainer = contentElement.querySelector('.code-mirror-wrapper');
+
+                state.textarea.style.cssText = `
             position: absolute;
             top: 0;
             left: 0;
@@ -75,7 +80,7 @@ export class CodeEditorApp extends App {
             background: var(--secondary-bg, #21252b);
         `;
 
-        this.codeEditor.style.cssText = `
+        state.codeEditor.style.cssText = `
             position: absolute;
             top: 0;
             left: 0;
@@ -95,51 +100,54 @@ export class CodeEditorApp extends App {
 
         contentElement.querySelector('.codeeditor-toolbar').addEventListener('click', async (e) => {
             const button = e.target.closest('button[data-action]');
-            if (button) await this._handleToolbarAction(button.dataset.action);
+            if (button) await this._handleToolbarAction(button.dataset.action, windowInstance);
         });
 
-        this.textarea.addEventListener('input', () => {
-            this.isDirty = this.textarea.value !== this.originalContent;
-            this._updateWindowTitleAndStatus();
-            this._updateCodeHighlighting();
-            this._updateCursorPosition();
+        state.textarea.addEventListener('input', () => {
+            state.isDirty = state.textarea.value !== state.originalContent;
+            this._updateWindowTitleAndStatus(windowInstance);
+            this._updateCodeHighlighting(windowInstance);
+            this._updateCursorPosition(windowInstance);
         });
-        this.textarea.addEventListener('scroll', () => {
-            const container = this.codeEditor.parentElement;
-            container.scrollTop = this.textarea.scrollTop;
-            container.scrollLeft = this.textarea.scrollLeft;
+        state.textarea.addEventListener('scroll', () => {
+            const container = state.codeEditor.parentElement;
+            container.scrollTop = state.textarea.scrollTop;
+            container.scrollLeft = state.textarea.scrollLeft;
 
-            this.codeEditor.style.transform = `translate(-${this.textarea.scrollLeft}px, -${this.textarea.scrollTop}px)`;
+            state.codeEditor.style.transform = `translate(-${state.textarea.scrollLeft}px, -${state.textarea.scrollTop}px)`;
         });
-        this.textarea.addEventListener('click', () => this._updateCursorPosition());
-        this.textarea.addEventListener('keyup', () => this._updateCursorPosition());
+        state.textarea.addEventListener('click', () => this._updateCursorPosition(windowInstance));
+        state.textarea.addEventListener('keyup', () => this._updateCursorPosition(windowInstance));
 
-        windowInstance.on('beforeClose', () => this._handleBeforeClose());
-        windowInstance.on('focus', () => this.textarea.focus());
+        windowInstance.on('beforeClose', () => this._handleBeforeClose(windowInstance));
+        windowInstance.on('close', () => this.windows.delete(windowInstance.id));
+        windowInstance.on('focus', () => state.textarea.focus());
 
-        windowInstance.element.addEventListener('keydown', (e) => this._handleKeyDown(e));
+        windowInstance.element.addEventListener('keydown', (e) => this._handleKeyDown(e, windowInstance));
 
         if (launchOptions && launchOptions.filePathToOpen) {
-            this._loadFile(launchOptions.filePathToOpen);
+            this._loadFile(launchOptions.filePathToOpen, windowInstance);
         } else {
-            this._newFile();
+            this._newFile(windowInstance);
         }
-        this.textarea.focus();
+        state.textarea.focus();
     }
 
-    _updateCodeHighlighting() {
-        if (!this.codeEditor) return;
+    _updateCodeHighlighting(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (!state.codeEditor) return;
 
-        this.codeEditor.innerHTML = '';
+        state.codeEditor.innerHTML = '';
 
-        if (this.codeEditor.className !== `code-mirror language-${this.currentLanguage}`) {
-            this.codeEditor.className = `code-mirror language-${this.currentLanguage}`;
+        if (state.codeEditor.className !== `code-mirror language-${state.currentLanguage}`) {
+            state.codeEditor.className = `code-mirror language-${state.currentLanguage}`;
         }
 
-        this.codeEditor.textContent = this.textarea.value;
+        state.codeEditor.textContent = state.textarea.value;
 
         if (window.Prism) {
-            Prism.highlightElement(this.codeEditor);
+            Prism.highlightElement(state.codeEditor);
         }
     }
 
@@ -164,31 +172,36 @@ export class CodeEditorApp extends App {
         }
     }
 
-    _handleKeyDown(e) {
+    _handleKeyDown(e, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
         if (e.ctrlKey) {
             switch(e.key.toLowerCase()) {
-                case 'n': e.preventDefault(); this._handleToolbarAction('new'); break;
-                case 'o': e.preventDefault(); this._handleToolbarAction('open'); break;
+                case 'n': e.preventDefault(); this._handleToolbarAction('new', windowInstance); break;
+                case 'o': e.preventDefault(); this._handleToolbarAction('open', windowInstance); break;
                 case 's':
                     e.preventDefault();
-                    if (e.shiftKey) this._handleToolbarAction('save-as');
-                    else this._handleToolbarAction('save');
+                    if (e.shiftKey) this._handleToolbarAction('save-as', windowInstance);
+                    else this._handleToolbarAction('save', windowInstance);
                     break;
             }
         }
-        if (e.key === 'Tab' && e.target === this.textarea) {
+        if (e.key === 'Tab' && e.target === state.textarea) {
             e.preventDefault();
-            const start = this.textarea.selectionStart;
-            const end = this.textarea.selectionEnd;
-            this.textarea.value = this.textarea.value.substring(0, start) + "  " + this.textarea.value.substring(end);
-            this.textarea.selectionStart = this.textarea.selectionEnd = start + 2;
+            const start = state.textarea.selectionStart;
+            const end = state.textarea.selectionEnd;
+            state.textarea.value = state.textarea.value.substring(0, start) + "  " + state.textarea.value.substring(end);
+            state.textarea.selectionStart = state.textarea.selectionEnd = start + 2;
         }
     }
 
-    async _handleToolbarAction(action) {
+    async _handleToolbarAction(action, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+
         switch(action) {
             case 'new':
-                if (this.isDirty) {
+                if (state.isDirty) {
                     const shouldDiscard = await this.webOS.modals.showConfirm(
                         "There are unsaved changes. Discard them and create a new file?",
                         'Unsaved changes',
@@ -196,10 +209,10 @@ export class CodeEditorApp extends App {
                     );
                     if (!shouldDiscard) return;
                 }
-                this._newFile();
+                this._newFile(windowInstance);
                 break;
             case 'open':
-                if (this.isDirty) {
+                if (state.isDirty) {
                     const shouldDiscard = await this.webOS.modals.showConfirm(
                         "There are unsaved changes. Discard them and open another file?",
                         'Unsaved changes',
@@ -207,36 +220,41 @@ export class CodeEditorApp extends App {
                     );
                     if (!shouldDiscard) return;
                 }
-                await this._openFilePrompt();
+                await this._openFilePrompt(windowInstance);
                 break;
-            case 'save': this._saveFile(); break;
-            case 'save-as': await this._saveFileAs(); break;
-            case 'run-html': this._runHtmlPreview(); break;
+            case 'save': this._saveFile(windowInstance); break;
+            case 'save-as': await this._saveFileAs(windowInstance); break;
+            case 'run-html': this._runHtmlPreview(windowInstance); break;
         }
-    }    async _handleBeforeClose() {
-        if (this.isDirty) {
+    }
+
+    async _handleBeforeClose(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (state.isDirty) {
             const shouldSave = await this.webOS.modals.showConfirm(
                 "You have unsaved changes. Save them before closing?",
                 'Unsaved changes',
                 'fa-exclamation-triangle'
             );
             if (shouldSave) {
-                const saved = this._saveFile();
+                const saved = this._saveFile(windowInstance);
             }
         }
-        if (this.previewWindow && this.webOS.windowManager.getWindow(this.previewWindow.id)) {
-            this.previewWindow.close();
+        if (state.previewWindow && this.webOS.windowManager.getWindow(state.previewWindow.id)) {
+            state.previewWindow.close();
         }
     }
 
-    _updateWindowTitleAndStatus() {
-        if (!this.activeWindowInstance) return;
+    _updateWindowTitleAndStatus(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!windowInstance || !state) return;
         const baseTitle = "Code Editor";
         let fileName = "Untitled";
         let fileType = "Plain Text";
 
-        if (this.currentFilePath) {
-            fileName = this.currentFilePath.substring(this.currentFilePath.lastIndexOf('/') + 1);
+        if (state.currentFilePath) {
+            fileName = state.currentFilePath.substring(state.currentFilePath.lastIndexOf('/') + 1);
             const ext = fileName.split('.').pop().toLowerCase();
             if (ext === 'html' || ext === 'htm') fileType = 'HTML';
             else if (ext === 'css') fileType = 'CSS';
@@ -245,54 +263,62 @@ export class CodeEditorApp extends App {
             else if (ext === 'md') fileType = 'Markdown';
         }
 
-        const unsavedMark = this.isDirty ? "*" : "";
-        this.activeWindowInstance.setTitle(`${baseTitle} - ${fileName}${unsavedMark}`);
-        if (this.filenameDisplay) this.filenameDisplay.textContent = `${fileName}${unsavedMark}`;
-        if (this.fileTypeIndicator) this.fileTypeIndicator.textContent = fileType;
+        const unsavedMark = state.isDirty ? "*" : "";
+        windowInstance.setTitle(`${baseTitle} - ${fileName}${unsavedMark}`);
+        if (state.filenameDisplay) state.filenameDisplay.textContent = `${fileName}${unsavedMark}`;
+        if (state.fileTypeIndicator) state.fileTypeIndicator.textContent = fileType;
     }
 
-    _updateCursorPosition() {
-        if (!this.textarea || !this.statusBarInfo) return;
-        const textLines = this.textarea.value.substring(0, this.textarea.selectionStart).split("\n");
+    _updateCursorPosition(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (!state.textarea || !state.statusBarInfo) return;
+        const textLines = state.textarea.value.substring(0, state.textarea.selectionStart).split("\n");
         const currentLine = textLines.length;
         const currentCol = textLines[textLines.length - 1].length + 1;
-        this.statusBarInfo.textContent = `Line: ${currentLine}, Col: ${currentCol}`;
+        state.statusBarInfo.textContent = `Line: ${currentLine}, Col: ${currentCol}`;
     }
 
-    _newFile() {
-        this.textarea.value = '';
-        this.originalContent = '';
-        this.currentFilePath = null;
-        this.isDirty = false;
-        this.currentLanguage = 'plaintext';
-        this._updateWindowTitleAndStatus();
-        this._updateCodeHighlighting();
-        this._updateCursorPosition();
-        this.textarea.focus();
+    _newFile(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.textarea.value = '';
+        state.originalContent = '';
+        state.currentFilePath = null;
+        state.isDirty = false;
+        state.currentLanguage = 'plaintext';
+        this._updateWindowTitleAndStatus(windowInstance);
+        this._updateCodeHighlighting(windowInstance);
+        this._updateCursorPosition(windowInstance);
+        state.textarea.focus();
     }
 
-    _loadFile(path) {
+    _loadFile(path, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
         const content = this.webOS.fs.readFile(path);
         if (content !== null) {
-            this.textarea.value = content;
-            this.originalContent = content;
-            this.currentFilePath = path;
-            this.isDirty = false;
+            state.textarea.value = content;
+            state.originalContent = content;
+            state.currentFilePath = path;
+            state.isDirty = false;
 
-            this.currentLanguage = this._detectLanguage(path);
+            state.currentLanguage = this._detectLanguage(path);
 
-            this._updateWindowTitleAndStatus();
-            this._updateCodeHighlighting();
-            this._updateCursorPosition();
+            this._updateWindowTitleAndStatus(windowInstance);
+            this._updateCodeHighlighting(windowInstance);
+            this._updateCursorPosition(windowInstance);
         } else {
             this.webOS.modals.showAlert(`Error: Could not open the file "${path}".`, 'Error opening file', 'fa-exclamation-triangle');
-            this._newFile();
+            this._newFile(windowInstance);
         }
     }
 
-    async _openFilePrompt() {
-        const defaultPath = this.currentFilePath ?
-            this.currentFilePath.substring(0, this.currentFilePath.lastIndexOf('/') + 1) :
+    async _openFilePrompt(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        const defaultPath = state.currentFilePath ?
+            state.currentFilePath.substring(0, state.currentFilePath.lastIndexOf('/') + 1) :
             "/Documents/";
 
         try {
@@ -302,23 +328,25 @@ export class CodeEditorApp extends App {
             );
 
             if (path) {
-                this._loadFile(path);
+                this._loadFile(path, windowInstance);
             }
         } catch (error) {
             console.log('File opening cancelled');
         }
     }
 
-    _saveFile() {
-        if (!this.currentFilePath) {
-            return this._saveFileAs();
+    _saveFile(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return false;
+        if (!state.currentFilePath) {
+            return this._saveFileAs(windowInstance);
         }
 
-        const success = this.webOS.fs.writeFile(this.currentFilePath, this.textarea.value);
+        const success = this.webOS.fs.writeFile(state.currentFilePath, state.textarea.value);
         if (success) {
-            this.originalContent = this.textarea.value;
-            this.isDirty = false;
-            this._updateWindowTitleAndStatus();
+            state.originalContent = state.textarea.value;
+            state.isDirty = false;
+            this._updateWindowTitleAndStatus(windowInstance);
             return true;
         } else {
             this.webOS.modals.showAlert("Error saving the file.", 'Save error', 'fa-exclamation-triangle');
@@ -326,13 +354,15 @@ export class CodeEditorApp extends App {
         }
     }
 
-    async _saveFileAs() {
+    async _saveFileAs(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return false;
         let defaultDir = "/Documents/";
         let defaultName = "new_file.txt";
 
-        if (this.currentFilePath) {
-            defaultDir = this.currentFilePath.substring(0, this.currentFilePath.lastIndexOf('/') + 1);
-            defaultName = this.currentFilePath.substring(this.currentFilePath.lastIndexOf('/') + 1);
+        if (state.currentFilePath) {
+            defaultDir = state.currentFilePath.substring(0, state.currentFilePath.lastIndexOf('/') + 1);
+            defaultName = state.currentFilePath.substring(state.currentFilePath.lastIndexOf('/') + 1);
         }
 
         const newPath = await this.webOS.modals.showFileSaveDialog(
@@ -352,16 +382,16 @@ export class CodeEditorApp extends App {
             if (!shouldOverwrite) return false;
         }
 
-        const success = this.webOS.fs.writeFile(newPath, this.textarea.value);
+        const success = this.webOS.fs.writeFile(newPath, state.textarea.value);
         if (success) {
-            this.currentFilePath = newPath;
-            this.originalContent = this.textarea.value;
-            this.isDirty = false;
+            state.currentFilePath = newPath;
+            state.originalContent = state.textarea.value;
+            state.isDirty = false;
 
-            this.currentLanguage = this._detectLanguage(newPath);
+            state.currentLanguage = this._detectLanguage(newPath);
 
-            this._updateWindowTitleAndStatus();
-            this._updateCodeHighlighting();
+            this._updateWindowTitleAndStatus(windowInstance);
+            this._updateCodeHighlighting(windowInstance);
             return true;
         } else {
             this.webOS.modals.showAlert("Error saving the file as.", 'Save error', 'fa-exclamation-triangle');
@@ -369,25 +399,27 @@ export class CodeEditorApp extends App {
         }
     }
 
-    _runHtmlPreview() {
-        const htmlContent = this.textarea.value;
+    _runHtmlPreview(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        const htmlContent = state.textarea.value;
         if (!htmlContent.trim()) {
             this.webOS.modals.showAlert("There is no HTML content to run.", 'No content', 'fa-info-circle');
             return;
         }
 
-        if (this.previewWindow && this.webOS.windowManager.getWindow(this.previewWindow.id)) {
-            this.previewWindow.close();
+        if (state.previewWindow && this.webOS.windowManager.getWindow(state.previewWindow.id)) {
+            state.previewWindow.close();
         }
 
-        this.previewWindow = this.webOS.windowManager.createWindow(
+        state.previewWindow = this.webOS.windowManager.createWindow(
             'html-preview-' + Date.now(),
             'HTML Preview',
             'fab fa-html5',
             { width: 800, height: 600, customClass: 'html-preview-window' }
         );
 
-        if (this.previewWindow) {
+        if (state.previewWindow) {
             const iframeHTML = `
                 <div class="html-preview-container" style="width:100%; height:100%; overflow:auto;">
                     <iframe
@@ -399,7 +431,7 @@ export class CodeEditorApp extends App {
                         Safe preview (no access to the main origin)
                     </div>
                 </div>`;
-            this.previewWindow.setContent(iframeHTML);
+            state.previewWindow.setContent(iframeHTML);
         }
     }
 
@@ -409,8 +441,9 @@ export class CodeEditorApp extends App {
 
     async onRelaunch(windowInstance, launchOptions) {
         super.onRelaunch(windowInstance, launchOptions);
+        const state = this._state(windowInstance);
         if (launchOptions && launchOptions.filePathToOpen) {
-            if (this.isDirty) {
+            if (state && state.isDirty) {
                 const shouldDiscard = await this.webOS.modals.showConfirm(
                     "You have unsaved changes. Discard and open the new file in this window?",
                     'Unsaved changes',
@@ -420,14 +453,7 @@ export class CodeEditorApp extends App {
                     return;
                 }
             }
-            this._loadFile(launchOptions.filePathToOpen);
+            this._loadFile(launchOptions.filePathToOpen, windowInstance);
         }
-    }
-
-    onClose() {
-        if (this.previewWindow && this.webOS.windowManager.getWindow(this.previewWindow.id)) {
-            this.previewWindow.close();
-        }
-        super.onClose();
     }
 }

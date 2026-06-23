@@ -13,49 +13,55 @@ export class DrawingApp extends App {
             allowMultipleInstances: true
         });
 
-        this.canvas = null;
-        this.ctx = null;
-        this.isDrawing = false;
-        this.currentTool = 'pencil';
-        this.currentColor = '#000000';
-        this.lineWidth = 5;
-        this._resizeFrame = null;
-        this._windowResizeHandler = null;
-
+        this.windows = new Map();
         this.BASE_CANVAS_WIDTH = 1200;
         this.BASE_CANVAS_HEIGHT = 900;
+    }
 
-        this._boundStartDrawing = this._startDrawing.bind(this);
-        this._boundDraw = this._draw.bind(this);
-        this._boundStopDrawing = this._stopDrawing.bind(this);
-        this._boundHandleTouchStart = this._handleTouchStart.bind(this);
-        this._boundHandleTouchMove = this._handleTouchMove.bind(this);
-        this._boundHandleResize = this._handleResize.bind(this);
+    _state(windowInstance) {
+        return windowInstance ? this.windows.get(windowInstance.id) : null;
     }
 
     renderContent(contentElement, windowInstance, launchOptions) {
-        this.window = windowInstance;
-
-        this.window.on('beforeclose', () => this.cleanup());
+        const state = {
+            canvas: null,
+            ctx: null,
+            isDrawing: false,
+            currentTool: 'pencil',
+            currentColor: '#000000',
+            lineWidth: 5,
+            lastX: 0,
+            lastY: 0,
+            resizeObserver: null,
+            resizeFrame: null,
+            windowResizeHandler: null,
+            canvasHandlers: null
+        };
+        this.windows.set(windowInstance.id, state);
 
         contentElement.innerHTML = this._getWindowContent();
 
+        windowInstance.on('beforeClose', () => this.cleanup(windowInstance));
+        windowInstance.on('close', () => this.windows.delete(windowInstance.id));
+
         setTimeout(async () => {
             try {
-                await this._initCanvas();
-                this._setupEventListeners();
+                await this._initCanvas(windowInstance);
+                this._setupEventListeners(windowInstance);
             } catch (error) {
             }
         }, 100);
 
-        return this.window;
+        return windowInstance;
     }
 
     _getWindowContent() {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'styles/drawing-app.css';
-        document.head.appendChild(link);
+        if (!document.querySelector('link[href="styles/drawing-app.css"]')) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'styles/drawing-app.css';
+            document.head.appendChild(link);
+        }
 
         return `
             <div class="drawing-app">
@@ -96,31 +102,11 @@ export class DrawingApp extends App {
         `;
     }
 
-    _saveCanvasContent() {
-        if (!this.canvas || this.canvas.width === 0 || this.canvas.height === 0) {
-            return null;
-        }
-        return this.canvas.toDataURL('image/png');
-    }
+    _handleResize(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state || !state.canvas || !state.canvas.parentElement) return;
 
-    _restoreCanvasContent(imageDataUrl, width, height) {
-        if (!imageDataUrl) {
-            this.ctx.fillStyle = 'white';
-            this.ctx.fillRect(0, 0, width, height);
-            return;
-        }
-
-        const img = new Image();
-        img.onload = () => {
-            this.ctx.drawImage(img, 0, 0, width, height);
-        };
-        img.src = imageDataUrl;
-    }
-
-    _handleResize() {
-        if (!this.canvas || !this.canvas.parentElement) return;
-
-        const container = this.canvas.parentElement;
+        const container = state.canvas.parentElement;
         const rect = container.getBoundingClientRect();
 
         const containerWidth = rect.width;
@@ -136,33 +122,34 @@ export class DrawingApp extends App {
         const offsetX = (containerWidth - scaledWidth) / 2;
         const offsetY = (containerHeight - scaledHeight) / 2;
 
-        this.canvas.style.width = `${scaledWidth}px`;
-        this.canvas.style.height = `${scaledHeight}px`;
-        this.canvas.style.position = 'absolute';
-        this.canvas.style.left = `${offsetX}px`;
-        this.canvas.style.top = `${offsetY}px`;
+        state.canvas.style.width = `${scaledWidth}px`;
+        state.canvas.style.height = `${scaledHeight}px`;
+        state.canvas.style.position = 'absolute';
+        state.canvas.style.left = `${offsetX}px`;
+        state.canvas.style.top = `${offsetY}px`;
+        state.canvas.style.imageRendering = 'auto';
+    }
 
-        this.canvas.style.imageRendering = 'auto';
-    };
-
-    async _initCanvas() {
-        if (!this.window?.contentElement) {
+    async _initCanvas(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        if (!windowInstance?.contentElement) {
             throw new Error('The window content is not available');
         }
 
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        const container = this.window.contentElement.querySelector('.canvas-container');
-        this.canvas = this.window.contentElement.querySelector('#drawing-canvas');
+        const container = windowInstance.contentElement.querySelector('.canvas-container');
+        state.canvas = windowInstance.contentElement.querySelector('#drawing-canvas');
 
-        if (!this.canvas) {
+        if (!state.canvas) {
             throw new Error('Could not find the canvas element');
         }
 
-        this.canvas.width = this.BASE_CANVAS_WIDTH;
-        this.canvas.height = this.BASE_CANVAS_HEIGHT;
+        state.canvas.width = this.BASE_CANVAS_WIDTH;
+        state.canvas.height = this.BASE_CANVAS_HEIGHT;
 
-        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+        state.ctx = state.canvas.getContext('2d', { willReadFrequently: true });
 
         if (!container) {
             throw new Error('Could not find the canvas container');
@@ -173,246 +160,221 @@ export class DrawingApp extends App {
         container.style.overflow = 'hidden';
 
         const handleResize = () => {
-            cancelAnimationFrame(this._resizeFrame);
-            this._resizeFrame = requestAnimationFrame(() => this._handleResize());
+            cancelAnimationFrame(state.resizeFrame);
+            state.resizeFrame = requestAnimationFrame(() => this._handleResize(windowInstance));
         };
 
-        this._handleResize();
-
-        this._initializeCanvasBackground();
+        this._handleResize(windowInstance);
+        this._initializeCanvasBackground(windowInstance);
 
         if (typeof ResizeObserver === 'function') {
-            this._resizeObserver = new ResizeObserver(handleResize);
-            this._resizeObserver.observe(container);
+            state.resizeObserver = new ResizeObserver(handleResize);
+            state.resizeObserver.observe(container);
         } else {
+            state.windowResizeHandler = handleResize;
             window.addEventListener('resize', handleResize);
-            this._windowResizeHandler = handleResize;
         }
     }
 
-    _initializeCanvasBackground() {
-        if (!this.ctx || !this.canvas) return;
+    _initializeCanvasBackground(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state || !state.ctx || !state.canvas) return;
 
-        this.ctx.fillStyle = 'white';
-        this.ctx.fillRect(0, 0, this.BASE_CANVAS_WIDTH, this.BASE_CANVAS_HEIGHT);
-        this._updateContextStyle();
+        state.ctx.fillStyle = 'white';
+        state.ctx.fillRect(0, 0, this.BASE_CANVAS_WIDTH, this.BASE_CANVAS_HEIGHT);
+        this._updateContextStyle(windowInstance);
     }
 
-    _setupEventListeners() {
-        if (!this.window?.contentElement) {
+    _setupEventListeners(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state || !windowInstance?.contentElement) {
             console.error('Cannot set up events: DOM elements not available');
             return;
         }
 
-        const handleToolButtonClick = (e) => {
-            const button = e.target.closest('.tool-btn');
-            if (!button) return;
+        const root = windowInstance.contentElement;
 
-            const tool = button.dataset.tool;
-            if (!tool) return;
-
-            this.currentTool = tool;
-            document.querySelectorAll('.tool-btn').forEach(btn =>
-                btn.classList.toggle('active', btn === button)
-            );
-
-            if (this.ctx) {
-                if (this.currentTool === 'eraser') {
-                    this.ctx.strokeStyle = 'white';
-                    this.ctx.globalCompositeOperation = 'destination-out';
-                } else {
-                    this.ctx.strokeStyle = this.currentColor;
-                    this.ctx.globalCompositeOperation = 'source-over';
-                }
-                this.ctx.lineWidth = this.lineWidth;
-                this.ctx.lineCap = 'round';
-                this.ctx.lineJoin = 'round';
-            }
-        };
-
-        const handleColorChange = (e) => {
-            this.currentColor = e.target.value;
-            this._updateContextStyle();
-        };
-
-        const handleBrushSizeChange = (e) => {
-            this.lineWidth = parseInt(e.target.value);
-            const brushSizeValue = this.window.contentElement.querySelector('#brush-size-value');
-            if (brushSizeValue) {
-                brushSizeValue.textContent = `${this.lineWidth}px`;
-            }
-            this._updateContextStyle();
-        };
-
-        const handleClearCanvas = () => {
-            if (this.ctx && this.canvas) {
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                this.ctx.fillStyle = 'white';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            }
-        };
-
-        try {
-            document.querySelectorAll('.tool-btn').forEach(button => {
-                button.removeEventListener('click', handleToolButtonClick);
-                button.addEventListener('click', handleToolButtonClick);
+        root.querySelectorAll('.tool-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const tool = button.dataset.tool;
+                if (!tool) return;
+                state.currentTool = tool;
+                root.querySelectorAll('.tool-btn').forEach(btn =>
+                    btn.classList.toggle('active', btn === button)
+                );
+                this._updateContextStyle(windowInstance);
             });
+        });
 
-            const colorPicker = this.window.contentElement.querySelector('#color-picker');
-            if (colorPicker) {
-                colorPicker.removeEventListener('input', handleColorChange);
-                colorPicker.addEventListener('input', handleColorChange);
-            }
+        const colorPicker = root.querySelector('#color-picker');
+        if (colorPicker) {
+            colorPicker.addEventListener('input', (e) => {
+                state.currentColor = e.target.value;
+                this._updateContextStyle(windowInstance);
+            });
+        }
 
-            const brushSize = this.window.contentElement.querySelector('#brush-size');
-            if (brushSize) {
-                brushSize.removeEventListener('input', handleBrushSizeChange);
-                brushSize.addEventListener('input', handleBrushSizeChange);
-            }
+        const brushSize = root.querySelector('#brush-size');
+        if (brushSize) {
+            brushSize.addEventListener('input', (e) => {
+                state.lineWidth = parseInt(e.target.value);
+                const brushSizeValue = root.querySelector('#brush-size-value');
+                if (brushSizeValue) {
+                    brushSizeValue.textContent = `${state.lineWidth}px`;
+                }
+                this._updateContextStyle(windowInstance);
+            });
+        }
 
-            const clearButton = this.window.contentElement.querySelector('#clear-canvas');
-            if (clearButton) {
-                clearButton.removeEventListener('click', handleClearCanvas);
-                clearButton.addEventListener('click', handleClearCanvas);
-            }
+        const clearButton = root.querySelector('#clear-canvas');
+        if (clearButton) {
+            clearButton.addEventListener('click', () => {
+                if (state.ctx && state.canvas) {
+                    state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+                    state.ctx.fillStyle = 'white';
+                    state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+                }
+            });
+        }
 
-            if (this.canvas) {
-                const canvasEvents = {
-                    mousedown: this._boundStartDrawing,
-                    mousemove: this._boundDraw,
-                    mouseup: this._boundStopDrawing,
-                    mouseout: this._boundStopDrawing,
-                    touchstart: this._boundHandleTouchStart,
-                    touchmove: this._boundHandleTouchMove,
-                    touchend: this._boundStopDrawing
-                };
-
-                Object.entries(canvasEvents).forEach(([event, handler]) => {
-                    this.canvas.removeEventListener(event, handler);
-                });
-
-                Object.entries(canvasEvents).forEach(([event, handler]) => {
-                    this.canvas.addEventListener(event, handler, { passive: false });
-                });
-            }
-        } catch (error) {
-            console.error('Error setting up events:', error);
+        if (state.canvas) {
+            const handlers = {
+                mousedown: (e) => this._startDrawing(e, windowInstance),
+                mousemove: (e) => this._draw(e, windowInstance),
+                mouseup: () => this._stopDrawing(windowInstance),
+                mouseout: () => this._stopDrawing(windowInstance),
+                touchstart: (e) => this._handleTouchStart(e, windowInstance),
+                touchmove: (e) => this._handleTouchMove(e, windowInstance),
+                touchend: () => this._stopDrawing(windowInstance)
+            };
+            state.canvasHandlers = handlers;
+            Object.entries(handlers).forEach(([event, handler]) => {
+                state.canvas.addEventListener(event, handler, { passive: false });
+            });
         }
     }
 
-    _startDrawing(e) {
-        if (!this.ctx) return;
+    _startDrawing(e, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state || !state.ctx) return;
 
-        this.isDrawing = true;
+        state.isDrawing = true;
 
-        const pos = this._getCanvasCoordinates(e);
+        const pos = this._getCanvasCoordinates(e, windowInstance);
         if (!pos) return;
 
-        this.lastX = pos.x;
-        this.lastY = pos.y;
+        state.lastX = pos.x;
+        state.lastY = pos.y;
 
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.lastX, this.lastY);
+        state.ctx.beginPath();
+        state.ctx.moveTo(state.lastX, state.lastY);
 
-        this.ctx.arc(this.lastX, this.lastY, this.lineWidth / 2, 0, Math.PI * 2);
-        this.ctx.fill();
+        state.ctx.arc(state.lastX, state.lastY, state.lineWidth / 2, 0, Math.PI * 2);
+        state.ctx.fill();
 
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.lastX, this.lastY);
+        state.ctx.beginPath();
+        state.ctx.moveTo(state.lastX, state.lastY);
     }
 
-    _getCanvasCoordinates(e) {
+    _getCanvasCoordinates(e, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state || !state.canvas) return null;
+
         let x, y;
+        const rect = state.canvas.getBoundingClientRect();
         if (e.touches) {
             const touch = e.touches[0];
-            const rect = this.canvas.getBoundingClientRect();
-            x = (touch.clientX - rect.left) / rect.width * this.canvas.width;
-            y = (touch.clientY - rect.top) / rect.height * this.canvas.height;
+            x = (touch.clientX - rect.left) / rect.width * state.canvas.width;
+            y = (touch.clientY - rect.top) / rect.height * state.canvas.height;
             e.preventDefault();
         } else {
-            const rect = this.canvas.getBoundingClientRect();
-            x = (e.clientX - rect.left) / rect.width * this.canvas.width;
-            y = (e.clientY - rect.top) / rect.height * this.canvas.height;
+            x = (e.clientX - rect.left) / rect.width * state.canvas.width;
+            y = (e.clientY - rect.top) / rect.height * state.canvas.height;
         }
 
-        x = Math.max(0, Math.min(x, this.canvas.width));
-        y = Math.max(0, Math.min(y, this.canvas.height));
+        x = Math.max(0, Math.min(x, state.canvas.width));
+        y = Math.max(0, Math.min(y, state.canvas.height));
 
         return { x, y };
     }
 
-    _draw(e) {
-        if (!this.isDrawing || !this.ctx) return;
+    _draw(e, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state || !state.isDrawing || !state.ctx) return;
 
-        const pos = this._getCanvasCoordinates(e);
+        const pos = this._getCanvasCoordinates(e, windowInstance);
         if (!pos) return;
 
         const x = pos.x;
         const y = pos.y;
 
-        const dist = Math.sqrt(Math.pow(x - this.lastX, 2) + Math.pow(y - this.lastY, 2));
+        const dist = Math.sqrt(Math.pow(x - state.lastX, 2) + Math.pow(y - state.lastY, 2));
 
         if (dist > 10) {
             const steps = Math.ceil(dist / 2);
-            const stepX = (x - this.lastX) / steps;
-            const stepY = (y - this.lastY) / steps;
+            const stepX = (x - state.lastX) / steps;
+            const stepY = (y - state.lastY) / steps;
 
             for (let i = 0; i < steps; i++) {
-                const currentX = this.lastX + stepX * i;
-                const currentY = this.lastY + stepY * i;
-                this._drawPoint(currentX, currentY);
+                const currentX = state.lastX + stepX * i;
+                const currentY = state.lastY + stepY * i;
+                this._drawPoint(currentX, currentY, windowInstance);
             }
         } else {
-            this._drawPoint(x, y);
+            this._drawPoint(x, y, windowInstance);
         }
 
-        this.lastX = x;
-        this.lastY = y;
+        state.lastX = x;
+        state.lastY = y;
     }
 
-    _drawPoint(x, y) {
-        if (!this.ctx) return;
+    _drawPoint(x, y, windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state || !state.ctx) return;
 
-        this.ctx.lineTo(x, y);
-        this.ctx.stroke();
+        state.ctx.lineTo(x, y);
+        state.ctx.stroke();
 
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, this.ctx.lineWidth / 2, 0, Math.PI * 2);
-        this.ctx.fill();
+        state.ctx.beginPath();
+        state.ctx.arc(x, y, state.ctx.lineWidth / 2, 0, Math.PI * 2);
+        state.ctx.fill();
 
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, y);
+        state.ctx.beginPath();
+        state.ctx.moveTo(x, y);
     }
 
-    _updateContextStyle() {
-        if (!this.ctx) return;
+    _updateContextStyle(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state || !state.ctx) return;
 
-        if (this.currentTool === 'eraser') {
-            this.ctx.strokeStyle = 'white';
-            this.ctx.fillStyle = 'white';
-            this.ctx.globalCompositeOperation = 'destination-out';
+        if (state.currentTool === 'eraser') {
+            state.ctx.strokeStyle = 'white';
+            state.ctx.fillStyle = 'white';
+            state.ctx.globalCompositeOperation = 'destination-out';
         } else {
-            this.ctx.strokeStyle = this.currentColor;
-            this.ctx.fillStyle = this.currentColor;
-            this.ctx.globalCompositeOperation = 'source-over';
+            state.ctx.strokeStyle = state.currentColor;
+            state.ctx.fillStyle = state.currentColor;
+            state.ctx.globalCompositeOperation = 'source-over';
         }
 
-        this.ctx.lineWidth = this.lineWidth;
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
+        state.ctx.lineWidth = state.lineWidth;
+        state.ctx.lineCap = 'round';
+        state.ctx.lineJoin = 'round';
 
-        this.ctx.imageSmoothingEnabled = true;
-        this.ctx.imageSmoothingQuality = 'high';
+        state.ctx.imageSmoothingEnabled = true;
+        state.ctx.imageSmoothingQuality = 'high';
     }
 
-    _stopDrawing() {
-        this.isDrawing = false;
-        if (this.ctx) {
-            this.ctx.beginPath();
+    _stopDrawing(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
+        state.isDrawing = false;
+        if (state.ctx) {
+            state.ctx.beginPath();
         }
     }
 
-    _handleTouchStart(e) {
+    _handleTouchStart(e, windowInstance) {
         if (e.cancelable) {
             e.preventDefault();
         }
@@ -421,10 +383,10 @@ export class DrawingApp extends App {
             clientX: touch.clientX,
             clientY: touch.clientY
         });
-        this._startDrawing(mouseEvent);
+        this._startDrawing(mouseEvent, windowInstance);
     }
 
-    _handleTouchMove(e) {
+    _handleTouchMove(e, windowInstance) {
         if (e.cancelable) {
             e.preventDefault();
         }
@@ -433,51 +395,37 @@ export class DrawingApp extends App {
             clientX: touch.clientX,
             clientY: touch.clientY
         });
-        this._draw(mouseEvent);
+        this._draw(mouseEvent, windowInstance);
     }
 
-    cleanup() {
+    cleanup(windowInstance) {
+        const state = this._state(windowInstance);
+        if (!state) return;
         try {
-            cancelAnimationFrame(this._resizeFrame);
+            cancelAnimationFrame(state.resizeFrame);
 
-            if (this._resizeObserver) {
-                this._resizeObserver.disconnect();
-                this._resizeObserver = null;
+            if (state.resizeObserver) {
+                state.resizeObserver.disconnect();
+                state.resizeObserver = null;
             }
 
-            if (this._windowResizeHandler) {
-                if (this.window?.off) {
-                    ['resize', 'maximize', 'restore'].forEach(event => {
-                        this.window.off(event, this._boundHandleResize);
-                    });
-                } else if (window.removeEventListener) {
-                    window.removeEventListener('resize', this._boundHandleResize);
-                }
-                this._windowResizeHandler = null;
+            if (state.windowResizeHandler) {
+                window.removeEventListener('resize', state.windowResizeHandler);
+                state.windowResizeHandler = null;
             }
 
-            if (this.canvas) {
-                const events = {
-                    mousedown: this._boundStartDrawing,
-                    mousemove: this._boundDraw,
-                    mouseup: this._boundStopDrawing,
-                    mouseout: this._boundStopDrawing,
-                    touchstart: this._boundHandleTouchStart,
-                    touchmove: this._boundHandleTouchMove,
-                    touchend: this._boundStopDrawing
-                };
-
-                Object.entries(events).forEach(([event, handler]) => {
-                    this.canvas.removeEventListener(event, handler);
+            if (state.canvas && state.canvasHandlers) {
+                Object.entries(state.canvasHandlers).forEach(([event, handler]) => {
+                    state.canvas.removeEventListener(event, handler);
                 });
-
-                if (this.ctx) {
-                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                    this.ctx = null;
-                }
-
-                this.canvas = null;
             }
+
+            if (state.ctx && state.canvas) {
+                state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+            }
+
+            state.ctx = null;
+            state.canvas = null;
         } catch (error) {
         }
     }
