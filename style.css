@@ -1276,6 +1276,11 @@ ul {
 .terminal-input:focus {
     outline: none;
 }
+.terminal-line.error { color: #f48771; }
+.terminal-line.success { color: #65c791; }
+.terminal-line.dir { color: #6ab0f3; }
+.terminal-line.muted { color: #888888; }
+.terminal-line.accent { color: #4ec9b0; }
 /* -------------------- */
 /* -- Code Editor App - */
 /* -------------------- */
