@@ -7,37 +7,31 @@ AerionOS is an interactive desktop operating system simulation that runs entirel
 ## Highlights
 
 *   **Desktop Environment:** Draggable, minimizable, maximizable and closable windows.
+*   **Multiple Windows per App:** Open several instances of the same app at once, each with fully isolated state.
 *   **Taskbar and Start Menu:** Functional for launching applications and managing windows.
 *   **Simulated File System:** Persisted per user using `localStorage`.
-*   **User Authentication:** Basic "login" and "registration".
+*   **Login Screen:** A passwordless default-user login screen is shown before the desktop; logging out returns to it.
 *   **Included Applications:**
     *   File Explorer
-    *   Notepad (save/open `.txt` files)
-    *   Code Editor (save/open files, run basic HTML)
-    *   Terminal (basic file system commands)
+    *   Notepad (create, open and save `.txt` files)
+    *   Code Editor (syntax highlighting, open/save files, run HTML in a preview window)
+    *   Terminal (file system commands — `ls`, `cd`, `cat`, `mkdir`, `touch`, `rm`, `cp`, `mv`, `tree`, `open`, `neofetch`, `history`, `echo` with `>`/`>>` redirection; colored output, command history and tab completion)
     *   Calculator
-    *   Web Browser (basic, with **limitations due to the X-Frame-Options policies** of many sites that prevent embedding them in iframes).
+    *   Web Browser (fetches sites through a CORS proxy; includes a start page, a stop button and cancellable navigation — limited by the X-Frame-Options/CORS policies of many sites)
     *   Settings (wallpaper customization, system info)
-    *   Drawing App (interactive canvas with drawing tools)
-    *   Games: Minesweeper, Chess (1P vs simple AI / 2P local) and **DOOM** (full emulation of the classic game)
+    *   AuraSketch (drawing app: pencil, eraser, paint bucket, line/rectangle/ellipse shapes, color palette, eyedropper, undo/redo, brush sizes, download as PNG and save into the file system)
+    *   Games: Minesweeper (first click is always safe), Chess (1P vs AI / 2P local, with check and checkmate detection) and **DOOM** (full DOSBox emulation of the classic game)
 *   **Modular Architecture:** Code organized into ES6 classes and modules.
 
 ## Recent Improvements
 
-*   **Full Rebranding:** The project was renamed from **AuraOS** to **AerionOS** with a new visual identity.
-*   **UX/UI Improvements:**
-    *   Larger icons in the main menu for better usability
-    *   Multiple wallpapers available
-    *   Better visual consistency using PNG icons instead of SVG
-    *   Improved selection styles for interactive elements
-*   **New Features:**
-    *   Full DOOM emulation using DOSBox
-    *   Drawing app with advanced tools
-    *   Expanded wallpaper management system
-*   **Technical Fixes:**
-    *   Improved persistence of user settings
-    *   Optimization of the simulated file system
-    *   Fixed global references and ES6 modules
+*   **Login Screen:** Passwordless login with a default user, shown before the desktop.
+*   **AuraSketch Upgrade:** Paint bucket, shape tools, color palette, eyedropper, undo/redo and save (PNG download + file system).
+*   **Terminal Upgrade:** Many new file commands, colored output, redirection and tab completion of commands.
+*   **DOOM Keyboard Fix:** DOSBox no longer hijacks the keyboard after closing or when other apps are focused.
+*   **Browser Navigation:** Loads are now cancellable (stop button, start page) so the UI never gets stuck while a page is loading.
+*   **Per-Window State:** Multi-instance apps no longer share state between windows.
+*   **English Codebase:** The whole codebase and UI were translated to English.
 
 ## Technologies
 
