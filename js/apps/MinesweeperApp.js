@@ -114,7 +114,7 @@ export class MinesweeperApp extends App {
         while (minesToPlace > 0) {
             const r = Math.floor(Math.random() * state.rows);
             const c = Math.floor(Math.random() * state.cols);
-            if ((r === firstClickRow && c === firstClickCol) || state.board[r][c].isMine) {
+            if ((Math.abs(r - firstClickRow) <= 1 && Math.abs(c - firstClickCol) <= 1) || state.board[r][c].isMine) {
                 continue;
             }
             state.board[r][c].isMine = true;
