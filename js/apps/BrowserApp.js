@@ -19,6 +19,9 @@ export class BrowserApp extends App {
         this.iframeHistoryIndex = -1;
         this.proxyEnabled = true;
         this.currentOriginalUrl = null;
+        this.loadToken = 0;
+        this.currentAbort = null;
+        this.isLoading = false;
         this.proxyServices = [
             (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
             (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -32,7 +35,8 @@ export class BrowserApp extends App {
             <div class="browser-toolbar">
                 <button data-action="back" title="Back" disabled><i class="fas fa-arrow-left"></i></button>
                 <button data-action="forward" title="Forward" disabled><i class="fas fa-arrow-right"></i></button>
-                <button data-action="reload" title="Reload"><i class="fas fa-sync-alt"></i></button>
+                <button data-action="reload" class="reload-button" title="Reload"><i class="fas fa-sync-alt"></i></button>
+                <button data-action="home" title="Home"><i class="fas fa-home"></i></button>
                 <input type="text" class="browser-address-bar" placeholder="Type a URL">
                 <button data-action="go" title="Go"><i class="fas fa-arrow-right"></i></button>
                 <button data-action="proxy" title="Toggle Proxy" class="active"><i class="fas fa-shield-alt"></i></button>
@@ -58,6 +62,7 @@ export class BrowserApp extends App {
         this.backButton = contentElement.querySelector('[data-action="back"]');
         this.forwardButton = contentElement.querySelector('[data-action="forward"]');
         this.proxyButton = contentElement.querySelector('[data-action="proxy"]');
+        this.reloadButton = contentElement.querySelector('.reload-button');
         this.updateProxyButtonState();
         this.window = windowInstance;
 
@@ -163,52 +168,94 @@ export class BrowserApp extends App {
         let fullUrl = url.trim();
         if (!fullUrl.match(/^[a-zA-Z]+:\/\//) && !fullUrl.startsWith('about:')) { fullUrl = 'https://' + fullUrl; }
 
+        const myToken = ++this.loadToken;
+        if (this.currentAbort) this.currentAbort.abort();
+        this.currentAbort = null;
+
         this.currentOriginalUrl = fullUrl;
-        this.addressBar.value = this.currentOriginalUrl;
-        this.window.setTitle(`Web Browser - Loading...`);
+        this.addressBar.value = fullUrl;
+        this.window.setTitle('Web Browser - Loading...');
+        this._setLoading(true);
 
         if (!fromHistory) { this._updateHistory(fullUrl); }
-        if (!this.proxyEnabled) { this.iframe.src = this.currentOriginalUrl; return; }
+
+        if (!this.proxyEnabled) {
+            this.iframeMessage.style.display = 'none';
+            this.iframe.style.display = 'block';
+            this.iframe.src = fullUrl;
+            return;
+        }
 
         const errors = [];
-        const FETCH_TIMEOUT = 10000;
+        const FETCH_TIMEOUT = 8000;
 
         for (let i = 0; i < this.proxyServices.length; i++) {
-            const proxyFn = this.proxyServices[i];
-            const proxiedUrl = proxyFn(this.currentOriginalUrl);
-            this._showIframeLoadingScreen(`Loading via Proxy ${i + 1}/${this.proxyServices.length}...`, this.currentOriginalUrl);
+            if (myToken !== this.loadToken) return;
+            const proxiedUrl = this.proxyServices[i](fullUrl);
+            this._showIframeLoadingScreen(`Loading via Proxy ${i + 1}/${this.proxyServices.length}...`, fullUrl);
+
+            const controller = new AbortController();
+            this.currentAbort = controller;
+            const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
                 const response = await fetch(proxiedUrl, { signal: controller.signal });
-
                 clearTimeout(timeoutId);
+                if (myToken !== this.loadToken) return;
 
                 if (!response.ok) { throw new Error(`Proxy error: ${response.status} ${response.statusText}`); }
                 const html = await response.text();
+                if (myToken !== this.loadToken) return;
                 if (!html) { throw new Error("Proxy returned empty response."); }
-                const processedHtml = this._processHtml(html, this.currentOriginalUrl);
-                this.iframe.srcdoc = processedHtml;
+
+                this.iframe.srcdoc = this._processHtml(html, fullUrl);
+                this.currentAbort = null;
+                this._setLoading(false);
                 return;
             } catch (error) {
-                const errorMessage = error.name === 'AbortError' ? 'Timeout (10s)' : error.message;
+                clearTimeout(timeoutId);
+                if (myToken !== this.loadToken) return;
+                const errorMessage = error.name === 'AbortError' ? 'Timeout (8s)' : error.message;
                 console.warn(`Proxy attempt ${i + 1} failed:`, errorMessage);
                 errors.push(errorMessage);
             }
         }
 
-        console.error("All proxies failed.", errors);
+        if (myToken !== this.loadToken) return;
+        this.currentAbort = null;
+        this._setLoading(false);
         const finalErrorDetails = errors.some(e => e.includes('Failed to fetch'))
             ? "The site does not seem to exist or there is a network problem. Check the URL and your connection."
             : "The site could be down, not responding in time, or actively blocking proxies.";
         this._showIframeError("Could not load the page", finalErrorDetails);
     }
 
+    _setLoading(loading) {
+        this.isLoading = loading;
+        if (!this.reloadButton) return;
+        const icon = this.reloadButton.querySelector('i');
+        if (loading) {
+            if (icon) icon.className = 'fas fa-times';
+            this.reloadButton.title = 'Stop';
+        } else {
+            if (icon) icon.className = 'fas fa-sync-alt';
+            this.reloadButton.title = 'Reload';
+        }
+    }
+
+    _stopLoad() {
+        this.loadToken++;
+        if (this.currentAbort) this.currentAbort.abort();
+        this.currentAbort = null;
+        this._setLoading(false);
+    }
+
     _onIframeContentLoaded() {
+        this._setLoading(false);
         if (this.iframe.style.display === 'none') {
             this._showIframeContent();
+        }
+        if (this.currentOriginalUrl) {
             this.window.setTitle(`Web Browser - ${this.currentOriginalUrl}`);
         }
     }
@@ -217,7 +264,11 @@ export class BrowserApp extends App {
         switch(action) {
             case 'back': this._historyBack(); break;
             case 'forward': this._historyForward(); break;
-            case 'reload': if(this.currentOriginalUrl) this._loadUrl(this.currentOriginalUrl, true); break;
+            case 'reload':
+                if (this.isLoading) { this._stopLoad(); this._showStartPage(); }
+                else if (this.currentOriginalUrl) { this._loadUrl(this.currentOriginalUrl, true); }
+                break;
+            case 'home': this._showStartPage(); break;
             case 'go': this._loadUrl(this.addressBar.value); break;
             case 'proxy':
                 this.proxyEnabled = !this.proxyEnabled;
@@ -287,6 +338,10 @@ export class BrowserApp extends App {
     }
 
     _showStartPage() {
+        this.loadToken++;
+        if (this.currentAbort) this.currentAbort.abort();
+        this.currentAbort = null;
+        this._setLoading(false);
         this.currentOriginalUrl = null;
         this.addressBar.value = '';
         this.window.setTitle('Web Browser');
@@ -347,6 +402,9 @@ export class BrowserApp extends App {
     }
 
     destroy() {
+        this.loadToken++;
+        if (this.currentAbort) this.currentAbort.abort();
+        this.currentAbort = null;
         window.removeEventListener('message', this.messageHandler);
     }
 }
